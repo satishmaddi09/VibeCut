@@ -90,12 +90,10 @@ export async function POST(req: Request) {
     contents.push({
       text: `Create a storyboard for a short, engaging video based on the following user prompt: "${prompt}".
       
-      You must return a strictly structured JSON response that follows the provided schema. 
-      For each scene:
-      - Decide if it should display one of the uploaded images (use imageIdx between 0 and ${imageUrls ? imageUrls.length - 1 : -1}). If no image fits or if no images were uploaded, set imageIdx to -1.
-      - Write a short, highly engaging textOverlay that appears on screen. Keep it concise (under 8 words per scene).
-      - Select appropriate text and image animations that match the vibe of the prompt.
-      - Ensure the duration in frames is appropriate (e.g. 90 frames for 3 seconds). The total video duration should be around 6 to 15 seconds. Make sure scenes add up to this.`
+      Requirements:
+      - Analyze the uploaded images (if any) and reference them by their index (0-based) using the 'imageIdx' property.
+      - Write short, punchy, and context-aware captions ('textOverlay') for each scene.
+      - Make sure the total duration adds up to 6 to 15 seconds (180 to 450 frames at 30fps).`
     });
 
     console.log("Calling Gemini API...");
@@ -104,6 +102,15 @@ export async function POST(req: Request) {
       model: 'gemini-2.5-flash',
       contents: contents,
       config: {
+        systemInstruction: `You are VibeCut's Director AI, a creative video director.
+Your job is to analyze user prompts and uploaded images to output a timed storyboard for a vertical video.
+
+CRITICAL INSTRUCTIONS:
+1. IMAGE ANALYSIS: Analyze the visual contents of the uploaded images. For example, if you see blue fabric with gold/orange embroidery, recognize it as designer handwork or boutique fashion and write text that highlights this craftsmanship.
+2. COLOR HARMONY: Set 'backgroundGradientStart' and 'backgroundGradientEnd' hex codes to match the dominant and accent colors found in the uploaded images. The gradient should be gorgeous, high-contrast, and premium (avoid plain or mismatched colors).
+3. STORYBOARD SEQUENCE: Arrange the images in a logical storytelling order. If no images are uploaded, create text-only slides using your generated theme colors.
+4. COPYWRITING: Keep 'textOverlay' short and punchy (strictly under 6-8 words). Do not describe the image literally; instead, write marketing hooks or storytelling captions.
+5. MOTION & ANIMATION: Choose 'textAnimation' (fade, slide-up, zoom-in, none) and 'imageAnimation' (pan, zoom, none) that match the speed and tone of the user's description.`,
         responseMimeType: 'application/json',
         responseSchema: storyboardSchema,
       }
