@@ -27,17 +27,14 @@ jobs:
       - name: Install NPM Dependencies
         run: npm ci || npm install
 
-      - name: Write Payload JSON
-        # Save the full webhook payload to a JSON file (avoids bash escaping issues)
-        run: |
-          echo '${{ toJson(github.event.client_payload) }}' > remotion/payload.json
-
       - name: Extract Generated React Code & Config
-        # Extract the code string and configuration details into their respective files
+        # Extract the code string and configuration details into their respective files using env variable to avoid bash escaping issues
+        env:
+          CLIENT_PAYLOAD_JSON: ${{ toJson(github.event.client_payload) }}
         run: |
           node -e "
+          const payload = JSON.parse(process.env.CLIENT_PAYLOAD_JSON);
           const fs = require('fs');
-          const payload = JSON.parse(fs.readFileSync('remotion/payload.json', 'utf8'));
           fs.writeFileSync('remotion/VideoComposition.tsx', payload.code, 'utf8');
           fs.writeFileSync('remotion/storyboard.json', JSON.stringify({ durationInFrames: payload.durationInFrames }), 'utf8');
           console.log('Successfully wrote remotion/VideoComposition.tsx and remotion/storyboard.json!');
