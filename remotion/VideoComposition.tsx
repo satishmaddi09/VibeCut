@@ -19,11 +19,11 @@ export interface SceneData {
   textStyle: 'bold-clean' | 'metallic-gold' | 'neon-glow' | 'glitch-red-blue' | 'serif-elegant' | 'retro-vhs' | 'cyberpunk-hacker' | 'editorial-minimal';
   textAnimation: 'kinetic-spring' | 'fade' | 'slide-up' | 'zoom-in' | 'slide-left' | 'typewriter' | 'none';
   imageAnimation: 'pan' | 'zoom-slow' | 'zoom-fast-beat' | 'shake-beat' | 'zoom-in-out' | 'slide-slow' | 'spin-transition' | 'whip-left' | 'whip-right' | 'bounce-beat' | 'none';
-  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'optical-glow' | 'rgb-split-beat' | 'lens-flare' | 'none';
-  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'fire-embers' | 'none';
-  lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'light-leak-warm' | 'cyber-pulse' | 'film-burn-fast' | 'none';
+  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'optical-glow' | 'rgb-split-beat' | 'lens-flare' | 'shine-sweep' | 'dream-bloom' | 'glass-refraction' | 'shake-flash-beat' | 'none';
+  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'fire-embers' | 'gold-dust' | 'floating-petals' | 'none';
+  lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'light-leak-warm' | 'cyber-pulse' | 'film-burn-fast' | 'multi-runway' | 'prism-refraction' | 'dreamy-haze' | 'none';
   letterbox: boolean;
-  border: 'none' | 'gold-filigree' | 'neon-frame' | 'vhs-borders' | 'cyber-scanner' | 'thin-line';
+  border: 'none' | 'gold-filigree' | 'neon-frame' | 'vhs-borders' | 'cyber-scanner' | 'thin-line' | 'drawing-pulse' | 'corners-only' | 'ornament-lace';
   layout?: 'framed' | 'full-bleed' | 'full-width-centered';
   colorFilter?: 'none' | 'teal-orange' | 'vintage-warm' | 'emerald-luxury' | 'noir-bw' | 'hdr-vibrant';
 }
@@ -810,8 +810,317 @@ const LensFlare: React.FC = () => {
         height: 2,
         transform: "translateY(-50%)",
         background: "linear-gradient(to right, transparent, rgba(255, 215, 0, 0.45), rgba(255, 255, 255, 0.8), rgba(255, 215, 0, 0.45), transparent)",
-        boxShadow: "0 0 12px rgba(255, 215, 0, 0.6)",
       }} />
+    </div>
+  );
+};
+
+// --- Custom Overlays, Effects, and Particles ---
+
+// SVG border that draws itself, with a running neon golden pulse
+const DrawingBorder: React.FC<{ startFrame?: number; thickness?: number; color?: string; glowSize?: number }> = ({
+  startFrame = 0,
+  thickness = 3.5,
+  color = '#D4AF37',
+  glowSize = 22,
+}) => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const t = Math.min(1, Math.max(0, (frame - startFrame) / 40));
+  const easy = 1 - Math.pow(1 - t, 4); // easeOutQuart
+
+  const perimeter = (width + height) * 2;
+  const drawn = perimeter * easy;
+
+  return (
+    <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 11 }} viewBox={`0 0 ${width} ${height}`}>
+      <rect
+        x={thickness / 2}
+        y={thickness / 2}
+        width={width - thickness}
+        height={height - thickness}
+        fill="none"
+        stroke={color}
+        strokeWidth={thickness}
+        strokeDasharray={perimeter}
+        strokeDashoffset={perimeter - drawn}
+        style={{ opacity: 0.85, filter: `drop-shadow(0 0 ${glowSize}px ${color})` }}
+      />
+      {easy > 0.99 && (
+        <rect
+          x={thickness / 2}
+          y={thickness / 2}
+          width={width - thickness}
+          height={height - thickness}
+          fill="none"
+          stroke="#FFD700"
+          strokeWidth={thickness * 1.5}
+          strokeDasharray="150, 1000"
+          strokeDashoffset={frame * -12}
+          style={{ filter: `drop-shadow(0 0 ${glowSize * 1.2}px #FFD700)` }}
+        />
+      )}
+    </svg>
+  );
+};
+
+// Modern corner ornaments
+const ModernCornerOrnament: React.FC<{ corner: 'tl' | 'tr' | 'bl' | 'br'; size?: number; opacity?: number }> = ({
+  corner,
+  size = 60,
+  opacity = 1,
+}) => {
+  const { width, height } = useVideoConfig();
+  const transforms = {
+    tl: "translate(0, 0)",
+    tr: `translate(${width}, 0) scaleX(-1)`,
+    bl: `translate(0, ${height}) scaleY(-1)`,
+    br: `translate(${width}, ${height}) scale(-1, -1)`,
+  };
+  const GOLD = "#D4AF37";
+  return (
+    <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity }} viewBox={`0 0 ${width} ${height}`}>
+      <g transform={transforms[corner]}>
+        <path
+          d={`M ${size} 10 L 10 10 L 10 ${size}`}
+          fill="none"
+          stroke={GOLD}
+          strokeWidth={3}
+          style={{ filter: `drop-shadow(0 0 6px ${GOLD})` }}
+        />
+        <circle cx={10} cy={10} r={4} fill={GOLD} style={{ filter: `drop-shadow(0 0 8px ${GOLD})` }} />
+      </g>
+    </svg>
+  );
+};
+
+const ModernCorners: React.FC<{ opacity?: number }> = ({ opacity = 1 }) => {
+  return (
+    <>
+      {(['tl', 'tr', 'bl', 'br'] as const).map(c => (
+        <ModernCornerOrnament key={c} corner={c} opacity={opacity} />
+      ))}
+    </>
+  );
+};
+
+// Ornate Gold Lace Border
+const OrnateLaceBorder: React.FC = () => {
+  const frame = useCurrentFrame();
+  const pulse = 0.9 + 0.1 * Math.sin(frame * 0.06);
+  const GOLD = "#D4AF37";
+  return (
+    <div style={{
+      position: 'absolute', inset: 24,
+      border: `2px solid ${GOLD}`,
+      borderRadius: '20px',
+      boxShadow: `inset 0 0 30px rgba(212,175,55,${0.3 * pulse}), 0 0 15px rgba(212,175,55,${0.2 * pulse})`,
+      pointerEvents: 'none',
+      zIndex: 14,
+    }}>
+      <div style={{ position: 'absolute', top: 6, left: 6, width: 25, height: 25, borderTop: `2px solid ${GOLD}`, borderLeft: `2px solid ${GOLD}`, borderRadius: '4px 0 0 0' }} />
+      <div style={{ position: 'absolute', top: 6, right: 6, width: 25, height: 25, borderTop: `2px solid ${GOLD}`, borderRight: `2px solid ${GOLD}`, borderRadius: '0 4px 0 0' }} />
+      <div style={{ position: 'absolute', bottom: 6, left: 6, width: 25, height: 25, borderBottom: `2px solid ${GOLD}`, borderLeft: `2px solid ${GOLD}`, borderRadius: '0 0 0 4px' }} />
+      <div style={{ position: 'absolute', bottom: 6, right: 6, width: 25, height: 25, borderBottom: `2px solid ${GOLD}`, borderRight: `2px solid ${GOLD}`, borderRadius: '0 0 4px 0' }} />
+      <div style={{
+        position: 'absolute', inset: 4,
+        border: '1.5px dashed rgba(212, 175, 55, 0.65)',
+        borderRadius: '16px',
+      }} />
+    </div>
+  );
+};
+
+// Warm Multi-layered Light Leak
+const MultiRunwayLightLeak: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+
+  const leaks = useMemo(() => [
+    { color: "rgba(255, 170, 50, 0.12)", baseSize: 500, speedX: 0.8, speedY: 0.5, phase: 0 },
+    { color: "rgba(212, 175, 55, 0.08)", baseSize: 700, speedX: -0.5, speedY: 0.9, phase: 100 },
+    { color: "rgba(255, 100, 100, 0.06)", baseSize: 600, speedX: 0.6, speedY: -0.7, phase: 200 },
+  ], []);
+
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 13 }}>
+      {leaks.map((leak, i) => {
+        const x = (Math.sin(frame * 0.01 * leak.speedX + leak.phase) * 0.3 + 0.5) * width;
+        const y = (Math.cos(frame * 0.01 * leak.speedY + leak.phase) * 0.3 + 0.5) * height;
+        const size = leak.baseSize + Math.sin(frame * 0.02 + leak.phase) * 100;
+        const opacity = 0.5 + 0.5 * Math.sin(frame * 0.015 + leak.phase);
+
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: x - size / 2,
+              top: y - size / 2,
+              width: size,
+              height: size,
+              borderRadius: "50%",
+              background: `radial-gradient(circle, ${leak.color} 0%, transparent 70%)`,
+              opacity: opacity,
+              mixBlendMode: "screen",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+// Rainbow chromatic light refraction
+const PrismRefraction: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { width } = useVideoConfig();
+  const xOffset = interpolate(frame % 240, [0, 240], [-width * 0.5, width * 1.5]);
+  const rot = Math.sin(frame * 0.005) * 20;
+
+  return (
+    <div style={{
+      position: 'absolute', inset: -100, pointerEvents: 'none', zIndex: 13,
+      background: `linear-gradient(135deg, rgba(255,0,0,0.08) 0%, rgba(255,154,0,0.08) 10%, rgba(208,222,33,0.08) 20%, rgba(79,220,74,0.08) 30%, rgba(63,218,216,0.08) 40%, rgba(47,76,229,0.08) 50%, rgba(135,42,229,0.08) 60%, transparent 80%)`,
+      transform: `translateX(${xOffset}px) rotate(${rot}deg)`,
+      mixBlendMode: 'screen',
+      filter: 'blur(35px)',
+    }} />
+  );
+};
+
+// Soft luxury pastel cloud glow
+const DreamyHaze: React.FC = () => {
+  const frame = useCurrentFrame();
+  const op = 0.5 + 0.3 * Math.sin(frame * 0.03);
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 13,
+      background: 'radial-gradient(circle at 80% 20%, rgba(236,72,153,0.15) 0%, rgba(168,85,247,0.15) 40%, rgba(251,191,36,0.08) 80%, transparent 100%)',
+      opacity: op,
+      mixBlendMode: 'color-dodge',
+    }} />
+  );
+};
+
+// Skewed Golden sweep
+const ShineSweep: React.FC<{ startFrame?: number }> = ({ startFrame = 0 }) => {
+  const frame = useCurrentFrame();
+  const { width } = useVideoConfig();
+  const t = Math.min(1, Math.max(0, (frame - startFrame) / 35));
+  const x = interpolate(t, [0, 1], [-350, width + 350]);
+
+  return (
+    <div style={{
+      position: "absolute",
+      inset: 0,
+      overflow: "hidden",
+      pointerEvents: "none",
+      zIndex: 14,
+    }}>
+      <div style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: x,
+        width: 250,
+        background: `linear-gradient(105deg, transparent 0%, rgba(255,215,0,0.18) 50%, transparent 100%)`,
+        transform: "skewX(-15deg)",
+      }} />
+    </div>
+  );
+};
+
+// Ribbed glassmorphic refractions overlay
+const GlassRefraction: React.FC = () => {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 12,
+      backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 4px, transparent 4px, transparent 24px)',
+      backdropFilter: 'blur(1.5px) saturate(110%)',
+      boxShadow: 'inset 0 0 40px rgba(255,255,255,0.05)',
+    }} />
+  );
+};
+
+// Floating gold dust particles
+const GoldDustField: React.FC<{ count?: number }> = ({ count = 35 }) => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+
+  const particles = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      x: (i * 277 + 50) % width,
+      startY: (i * 431 + 100) % height,
+      speed: 0.35 + (i % 7) * 0.12,
+      size: 1.5 + (i % 4) * 0.8,
+      opacity: 0.35 + (i % 5) * 0.12,
+      phase: i * 47,
+    })),
+  [count, width, height]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 12 }}>
+      {particles.map((p, i) => {
+        const y = ((p.startY - frame * p.speed + p.phase) % height + height) % height;
+        const drift = Math.sin((frame * 0.02) + p.phase) * 15;
+        return (
+          <div key={i} style={{
+            position: "absolute",
+            left: p.x + drift,
+            top: y,
+            width: p.size,
+            height: p.size,
+            borderRadius: "50%",
+            background: '#FFD700',
+            opacity: p.opacity,
+            boxShadow: `0 0 ${p.size * 3}px #D4AF37`,
+          }} />
+        );
+      })}
+    </div>
+  );
+};
+
+// Floating red/pink rose petals
+const FloatingPetalsField: React.FC<{ count?: number }> = ({ count = 15 }) => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+
+  const petals = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      x: (i * 197 + 83) % width,
+      startY: (i * 311 + 47) % height,
+      speed: 0.6 + (i % 5) * 0.25,
+      size: 8 + (i % 6) * 4,
+      opacity: 0.45 + (i % 4) * 0.1,
+      phase: i * 29,
+      rotSpeed: 0.8 + (i % 3) * 0.4,
+    })),
+  [count, width, height]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 12 }}>
+      {petals.map((p, i) => {
+        const y = ((p.startY + frame * p.speed) % (height + 50)) - 25;
+        const drift = Math.sin((frame * 0.015) + p.phase) * 25;
+        const rot = frame * p.rotSpeed + p.phase;
+        
+        return (
+          <div key={i} style={{
+            position: "absolute",
+            left: p.x + drift,
+            top: y,
+            width: p.size,
+            height: p.size * 1.3,
+            borderRadius: "50% 10% 50% 50%",
+            background: 'linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%)',
+            opacity: p.opacity,
+            transform: `rotate(${rot}deg) rotateX(${rot * 0.5}deg)`,
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+          }} />
+        );
+      })}
     </div>
   );
 };
@@ -1036,6 +1345,19 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
     }
   } else if (scene.effect === 'optical-glow') {
     imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.15) contrast(1.05)`;
+  } else if (scene.effect === 'dream-bloom') {
+    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.1) contrast(1.05) saturate(1.1)`;
+  } else if (scene.effect === 'shake-flash-beat') {
+    const beat = spring({
+      frame: frame % 15,
+      fps,
+      config: { damping: 4, stiffness: 220, mass: 0.7 }
+    });
+    const decay = 1 - beat;
+    const shakeX = Math.sin(frame * 2.5) * 14 * decay;
+    const shakeY = Math.cos(frame * 2.9) * 14 * decay;
+    const zoom = 1.05 + 0.05 * decay;
+    imageTransform = `translate(${shakeX}px, ${shakeY}px) scale(${zoom})`;
   }
 
   // Fade animations for background/transition
@@ -1166,6 +1488,17 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
                   filter: 'blur(15px) brightness(1.5) contrast(1.3)',
                   mixBlendMode: 'screen',
                   opacity: 0.65,
+                  pointerEvents: 'none',
+                }} />
+              )}
+              {scene.effect === 'dream-bloom' && (
+                <Img src={scene.imageUrl} style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%',
+                  objectFit: imageObjFit,
+                  transform: imageTransform,
+                  filter: 'blur(20px) brightness(1.4) contrast(1.25)',
+                  mixBlendMode: 'screen',
+                  opacity: 0.55,
                   pointerEvents: 'none',
                 }} />
               )}
@@ -1308,6 +1641,15 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
           pointerEvents: 'none'
         }} />
       )}
+      {scene.effect === 'shake-flash-beat' && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundColor: '#ffffff',
+          opacity: interpolate(frame % 15, [0, 6], [0.75, 0], { extrapolateRight: 'clamp' }),
+          zIndex: 20,
+          pointerEvents: 'none'
+        }} />
+      )}
 
       {/* 7. Vignette effect */}
       {scene.effect === 'vignette' && (
@@ -1323,6 +1665,10 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {/* Optical Lens Flare */}
       {scene.effect === 'lens-flare' && <LensFlare />}
 
+      {/* Shine sweep and glass refraction */}
+      {scene.effect === 'shine-sweep' && <ShineSweep startFrame={0} />}
+      {scene.effect === 'glass-refraction' && <GlassRefraction />}
+
       {/* 8. Light Leaks */}
       {scene.lightLeak === 'police-flash' && <PoliceFlash />}
       {scene.lightLeak === 'aurora' && <AuroraLeak />}
@@ -1330,6 +1676,9 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.lightLeak === 'light-leak-warm' && <WarmLightLeak />}
       {scene.lightLeak === 'cyber-pulse' && <CyberPulseLeak />}
       {scene.lightLeak === 'film-burn-fast' && <FilmBurnLeak />}
+      {scene.lightLeak === 'multi-runway' && <MultiRunwayLightLeak />}
+      {scene.lightLeak === 'prism-refraction' && <PrismRefraction />}
+      {scene.lightLeak === 'dreamy-haze' && <DreamyHaze />}
 
       {/* 9. Borders */}
       {scene.border === 'gold-filigree' && <GoldFiligreeBorder />}
@@ -1337,6 +1686,9 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.border === 'vhs-borders' && <VhsBorders />}
       {scene.border === 'cyber-scanner' && <CyberScannerBorder />}
       {scene.border === 'thin-line' && <ThinLineBorder />}
+      {scene.border === 'drawing-pulse' && <DrawingBorder startFrame={0} />}
+      {scene.border === 'corners-only' && <ModernCorners opacity={1} />}
+      {scene.border === 'ornament-lace' && <OrnateLaceBorder />}
 
       {/* 10. Letterbox */}
       {scene.letterbox && <Letterbox />}
@@ -1347,6 +1699,8 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.particleOverlay === 'dust-particles' && <DustField />}
       {scene.particleOverlay === 'digital-rain' && <DigitalRainField />}
       {scene.particleOverlay === 'fire-embers' && <FireEmbersField />}
+      {scene.particleOverlay === 'gold-dust' && <GoldDustField count={30} />}
+      {scene.particleOverlay === 'floating-petals' && <FloatingPetalsField count={15} />}
 
     </AbsoluteFill>
   );

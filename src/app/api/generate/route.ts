@@ -43,22 +43,22 @@ const storyboardSchema: Schema = {
           },
           effect: { 
             type: Type.STRING, 
-            enum: ["glitch", "flash", "vignette", "film-grain", "vhs-distortion", "chromatic-aberration", "radial-blur", "optical-glow", "rgb-split-beat", "lens-flare", "none"],
+            enum: ["glitch", "flash", "vignette", "film-grain", "vhs-distortion", "chromatic-aberration", "radial-blur", "optical-glow", "rgb-split-beat", "lens-flare", "shine-sweep", "dream-bloom", "glass-refraction", "shake-flash-beat", "none"],
             description: "Main screen visual effect."
           },
           particleOverlay: { 
             type: Type.STRING, 
-            enum: ["gold-flakes", "sparkles", "dust-particles", "digital-rain", "fire-embers", "none"]
+            enum: ["gold-flakes", "sparkles", "dust-particles", "digital-rain", "fire-embers", "gold-dust", "floating-petals", "none"]
           },
           lightLeak: { 
             type: Type.STRING, 
-            enum: ["aurora", "police-flash", "gold-glow", "light-leak-warm", "cyber-pulse", "film-burn-fast", "none"],
+            enum: ["aurora", "police-flash", "gold-glow", "light-leak-warm", "cyber-pulse", "film-burn-fast", "multi-runway", "prism-refraction", "dreamy-haze", "none"],
             description: "Atmospheric light leak."
           },
           letterbox: { type: Type.BOOLEAN, description: "Add cinematic black bars on top and bottom." },
           border: { 
             type: Type.STRING, 
-            enum: ["none", "gold-filigree", "neon-frame", "vhs-borders", "cyber-scanner", "thin-line"]
+            enum: ["none", "gold-filigree", "neon-frame", "vhs-borders", "cyber-scanner", "thin-line", "drawing-pulse", "corners-only", "ornament-lace"]
           },
           layout: {
             type: Type.STRING,
@@ -186,8 +186,8 @@ export async function POST(req: Request) {
             systemInstruction: `You are VibeCut's Executive Video Director AI.
 Your job is to convert user requests into a detailed, modular, frame-by-frame JSON storyboard.
 You must analyze the prompt style and select the appropriate modular settings to support ANY style of edit, including:
-- PHONK/GLITCH EDITS: Fast cuts (10-25 frames per scene), shake-beat, bounce-beat, zoom-fast-beat, or zoom-in-out image animations; glitch, flash, rgb-split-beat, or chromatic-aberration screen effects; police-flash, film-burn-fast, or aurora light leaks; neon-glow or glitch-red-blue text styles; neon-frame or cyber-scanner borders; digital-rain or sparkles particle overlays; full-bleed or full-width-centered layouts; teal-orange or hdr-vibrant colorFilters; Montserrat/Impact fonts.
-- LUXURY/EMBROIDERY SHOWCASES: Moderate timing (60-90 frames), zoom-slow, slide-slow, or pan image animation; vignette, film-grain, optical-glow, lens-flare, or radial-blur effects; gold-flakes or sparkles particle overlays; gold-glow or film-burn-fast light leaks; metallic-gold or serif-elegant text styles; gold-filigree borders; framed or full-width-centered layouts; emerald-luxury or hdr-vibrant colorFilters; Playfair Display font.
+- PHONK/GLITCH EDITS: Fast cuts (10-25 frames per scene), shake-beat, bounce-beat, zoom-fast-beat, or zoom-in-out image animations; glitch, flash, rgb-split-beat, shake-flash-beat, or chromatic-aberration screen effects; police-flash, film-burn-fast, or aurora light leaks; neon-glow or glitch-red-blue text styles; neon-frame or cyber-scanner borders; digital-rain or sparkles particle overlays; full-bleed or full-width-centered layouts; teal-orange or hdr-vibrant colorFilters; Montserrat/Impact fonts.
+- LUXURY/EMBROIDERY SHOWCASES: Moderate timing (60-90 frames), zoom-slow, slide-slow, or pan image animation; vignette, film-grain, optical-glow, lens-flare, shine-sweep, dream-bloom, glass-refraction, or radial-blur effects; gold-flakes, gold-dust, floating-petals, or sparkles particle overlays; gold-glow, multi-runway, prism-refraction, dreamy-haze, or film-burn-fast light leaks; metallic-gold, serif-elegant, or editorial-minimal text styles; gold-filigree, drawing-pulse, corners-only, or ornament-lace borders; framed, full-width-centered, or full-bleed layouts; emerald-luxury or hdr-vibrant colorFilters; Playfair Display font.
 - RETRO/VINTAGE EDITS: Slow cuts (90-120 frames), pan or slide-slow image animation; film-grain or vhs-distortion effects; dust-particles overlay; light-leak-warm or aurora light leaks; retro-vhs or bold-clean text; typewriter text animation; vhs-borders; full-width-centered or framed layouts; vintage-warm colorFilter; letterboxes.
 - CYBERPUNK/TECH EDITS: Fast-paced cuts, zoom-in-out, bounce-beat, or shake-beat image animations; chromatic-aberration, rgb-split-beat, or glitch effects; digital-rain particle overlays; cyber-pulse or aurora light leaks; cyberpunk-hacker text style; cyber-scanner borders; full-bleed layout.
 - MINIMALIST EDITORIAL: Clean paced scenes, slide-slow or pan image animations; radial-blur, optical-glow, or vignette effects; dust-particles or sparkles overlay; aurora or gold-glow light leaks; editorial-minimal text style with typewriter or slide-left text animation; thin-line borders; full-width-centered or framed layouts.
