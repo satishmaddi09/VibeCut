@@ -1708,15 +1708,13 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
 
 export const VideoComposition: React.FC<{ storyboard?: Storyboard }> = ({ storyboard = defaultStoryboard }) => {
   const theme = storyboard.visualTheme;
-  let currentStartFrame = 0;
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#000000' }}>
       
       {/* 1. Scenes container sequence */}
       {storyboard.scenes.map((scene, index) => {
-        const start = currentStartFrame;
-        currentStartFrame += scene.durationInFrames;
+        const start = storyboard.scenes.slice(0, index).reduce((acc, s) => acc + (s.durationInFrames || 90), 0);
         
         return (
           <Sequence
