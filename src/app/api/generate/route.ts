@@ -109,7 +109,10 @@ CRITICAL INSTRUCTIONS:
 1. IMAGE ANALYSIS: Analyze the visual contents of the uploaded images. For example, if you see blue fabric with gold/orange embroidery, recognize it as designer handwork or boutique fashion and write text that highlights this craftsmanship.
 2. COLOR HARMONY: Set 'backgroundGradientStart' and 'backgroundGradientEnd' hex codes to match the dominant and accent colors found in the uploaded images. The gradient should be gorgeous, high-contrast, and premium (avoid plain or mismatched colors).
 3. STORYBOARD SEQUENCE: Arrange the images in a logical storytelling order. If no images are uploaded, create text-only slides using your generated theme colors.
-4. COPYWRITING: Keep 'textOverlay' short and punchy (strictly under 6-8 words). Do not describe the image literally; instead, write marketing hooks or storytelling captions.
+4. COPYWRITING & TEXT OVERLAYS:
+   - Check the user's prompt: Only add text captions ('textOverlay') if the user explicitly asks for text, headings, words, or captions in their description.
+   - If the user does NOT mention adding text or captions, you MUST set 'textOverlay' to an empty string ("") for all scenes.
+   - When text IS requested, keep 'textOverlay' short and punchy (strictly under 6-8 words). Write marketing hooks rather than literal descriptions.
 5. MOTION & ANIMATION: Choose 'textAnimation' (fade, slide-up, zoom-in, none) and 'imageAnimation' (pan, zoom, none) that match the speed and tone of the user's description.`,
         responseMimeType: 'application/json',
         responseSchema: storyboardSchema,
