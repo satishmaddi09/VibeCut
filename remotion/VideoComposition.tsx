@@ -39,6 +39,12 @@ export interface Storyboard {
   scenes: SceneData[];
 }
 
+// Helper to get safe fade range interpolation boundaries based on scene duration
+const getFadeRange = (duration: number, maxFade: number) => {
+  const fade = Math.min(maxFade, Math.floor(duration / 2.5));
+  return [0, fade, duration - fade, duration];
+};
+
 export const defaultStoryboard: Storyboard = {
   visualTheme: {
     backgroundGradientStart: '#05050d',
@@ -690,7 +696,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
   }
 
   // Fade animations for background/transition
-  const sceneOpacity = interpolate(frame, [0, 8, scene.durationInFrames - 8, scene.durationInFrames], [0, 1, 1, 0], {
+  const sceneOpacity = interpolate(frame, getFadeRange(scene.durationInFrames, 8), [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -801,7 +807,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
                 : scene.textAnimation === 'zoom-in'
                 ? `scale(${spring({ frame, fps, config: { damping: 10 } })})`
                 : undefined,
-              opacity: interpolate(frame, [0, 10, scene.durationInFrames - 10, scene.durationInFrames], [0, 1, 1, 0])
+              opacity: interpolate(frame, getFadeRange(scene.durationInFrames, 10), [0, 1, 1, 0])
             }}>
               {scene.textOverlay}
             </div>

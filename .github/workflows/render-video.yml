@@ -48,3 +48,12 @@ jobs:
           GENERATION_ID: ${{ github.event.client_payload.generationId }}
           FILE_PATH: out/video.mp4
         run: node scripts/upload-to-supabase.js
+
+      - name: Clean up Supabase on Failure
+        if: failure()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GENERATION_ID: ${{ github.event.client_payload.generationId }}
+        run: node scripts/cleanup-on-failure.js
+
