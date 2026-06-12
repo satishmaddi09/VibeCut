@@ -38,33 +38,43 @@ const storyboardSchema: Schema = {
           },
           imageAnimation: { 
             type: Type.STRING, 
-            enum: ["pan", "zoom-slow", "zoom-fast-beat", "shake-beat", "zoom-in-out", "slide-slow", "none"],
-            description: "Movement of the image."
+            enum: ["pan", "zoom-slow", "zoom-fast-beat", "shake-beat", "zoom-in-out", "slide-slow", "spin-transition", "whip-left", "whip-right", "bounce-beat", "none"],
+            description: "Movement / transition of the image."
           },
           effect: { 
             type: Type.STRING, 
-            enum: ["glitch", "flash", "vignette", "film-grain", "vhs-distortion", "chromatic-aberration", "radial-blur", "none"],
+            enum: ["glitch", "flash", "vignette", "film-grain", "vhs-distortion", "chromatic-aberration", "radial-blur", "optical-glow", "rgb-split-beat", "lens-flare", "none"],
             description: "Main screen visual effect."
           },
           particleOverlay: { 
             type: Type.STRING, 
-            enum: ["gold-flakes", "sparkles", "dust-particles", "digital-rain", "none"]
+            enum: ["gold-flakes", "sparkles", "dust-particles", "digital-rain", "fire-embers", "none"]
           },
           lightLeak: { 
             type: Type.STRING, 
-            enum: ["aurora", "police-flash", "gold-glow", "light-leak-warm", "cyber-pulse", "none"],
+            enum: ["aurora", "police-flash", "gold-glow", "light-leak-warm", "cyber-pulse", "film-burn-fast", "none"],
             description: "Atmospheric light leak."
           },
           letterbox: { type: Type.BOOLEAN, description: "Add cinematic black bars on top and bottom." },
           border: { 
             type: Type.STRING, 
             enum: ["none", "gold-filigree", "neon-frame", "vhs-borders", "cyber-scanner", "thin-line"]
+          },
+          layout: {
+            type: Type.STRING,
+            enum: ["framed", "full-bleed", "full-width-centered"],
+            description: "Layout mode of the scene media frame."
+          },
+          colorFilter: {
+            type: Type.STRING,
+            enum: ["none", "teal-orange", "vintage-warm", "emerald-luxury", "noir-bw", "hdr-vibrant"],
+            description: "Color correction / grading filter applied to the media."
           }
         },
         required: [
           "id", "durationInFrames", "imageIdx", "textOverlay", "textStyle", 
           "textAnimation", "imageAnimation", "effect", "particleOverlay", 
-          "lightLeak", "letterbox", "border"
+          "lightLeak", "letterbox", "border", "layout", "colorFilter"
         ],
       }
     }
@@ -176,16 +186,16 @@ export async function POST(req: Request) {
             systemInstruction: `You are VibeCut's Executive Video Director AI.
 Your job is to convert user requests into a detailed, modular, frame-by-frame JSON storyboard.
 You must analyze the prompt style and select the appropriate modular settings to support ANY style of edit, including:
-- PHONK/GLITCH EDITS: Fast cuts (10-25 frames per scene), shake-beat, zoom-fast-beat or zoom-in-out image animations, glitch, flash or chromatic-aberration screen effects, police-flash or aurora light leaks, neon-glow or glitch-red-blue text styles, neon-frame or cyber-scanner borders, digital-rain or sparkles particle overlays, Montserrat/Impact fonts.
-- LUXURY/EMBROIDERY SHOWCASES: Moderate timing (60-90 frames), zoom-slow or slide-slow image animation, vignette, film-grain or radial-blur effects, gold-flakes or sparkles particle overlays, gold-glow light leaks, metallic-gold or serif-elegant text styles, gold-filigree borders, Playfair Display font.
-- RETRO/VINTAGE EDITS: Slow cuts (90-120 frames), pan image animation, film-grain or vhs-distortion effects, dust-particles overlay, light-leak-warm or aurora light leaks, retro-vhs or bold-clean text, vhs-borders, letterboxes.
-- CYBERPUNK/TECH EDITS: Fast-paced cuts, zoom-in-out or shake-beat image animations, chromatic-aberration or glitch effects, digital-rain particle overlays, cyber-pulse or aurora light leaks, cyberpunk-hacker text style, cyber-scanner borders.
-- MINIMALIST EDITORIAL: Clean paced scenes, slide-slow or pan image animations, radial-blur or vignette effects, dust-particles overlay, aurora or gold-glow light leaks, editorial-minimal text style with typewriter or slide-left text animation, thin-line borders.
+- PHONK/GLITCH EDITS: Fast cuts (10-25 frames per scene), shake-beat, bounce-beat, zoom-fast-beat, or zoom-in-out image animations; glitch, flash, rgb-split-beat, or chromatic-aberration screen effects; police-flash, film-burn-fast, or aurora light leaks; neon-glow or glitch-red-blue text styles; neon-frame or cyber-scanner borders; digital-rain or sparkles particle overlays; full-bleed or full-width-centered layouts; teal-orange or hdr-vibrant colorFilters; Montserrat/Impact fonts.
+- LUXURY/EMBROIDERY SHOWCASES: Moderate timing (60-90 frames), zoom-slow, slide-slow, or pan image animation; vignette, film-grain, optical-glow, lens-flare, or radial-blur effects; gold-flakes or sparkles particle overlays; gold-glow or film-burn-fast light leaks; metallic-gold or serif-elegant text styles; gold-filigree borders; framed or full-width-centered layouts; emerald-luxury or hdr-vibrant colorFilters; Playfair Display font.
+- RETRO/VINTAGE EDITS: Slow cuts (90-120 frames), pan or slide-slow image animation; film-grain or vhs-distortion effects; dust-particles overlay; light-leak-warm or aurora light leaks; retro-vhs or bold-clean text; typewriter text animation; vhs-borders; full-width-centered or framed layouts; vintage-warm colorFilter; letterboxes.
+- CYBERPUNK/TECH EDITS: Fast-paced cuts, zoom-in-out, bounce-beat, or shake-beat image animations; chromatic-aberration, rgb-split-beat, or glitch effects; digital-rain particle overlays; cyber-pulse or aurora light leaks; cyberpunk-hacker text style; cyber-scanner borders; full-bleed layout.
+- MINIMALIST EDITORIAL: Clean paced scenes, slide-slow or pan image animations; radial-blur, optical-glow, or vignette effects; dust-particles or sparkles overlay; aurora or gold-glow light leaks; editorial-minimal text style with typewriter or slide-left text animation; thin-line borders; full-width-centered or framed layouts.
 
 RULES:
 1. TEXT OVERLAY RULE: Only add text overlay captions if the user explicitly requests/mentions text, headings, titles, or words in their prompt. If not mentioned, set 'textOverlay' to an empty string ("") for all scenes.
 2. DYNAMIC COLORS: Set visualTheme colors (backgroundGradientStart/End) to match the colors of the uploaded images.
-3. FLOW & TRANSITIONS: Vary scene durations and effects to create rhythm and prevent boring static loops.`,
+3. FLOW & TRANSITIONS: Vary scene durations, layouts, and transitions (e.g., use whip-left, whip-right, or spin-transition for high-energy cuts) to create a premium flow and prevent boring static loops.`,
             responseMimeType: 'application/json',
             responseSchema: storyboardSchema,
           }

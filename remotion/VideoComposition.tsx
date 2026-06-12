@@ -18,12 +18,14 @@ export interface SceneData {
   textOverlay: string;
   textStyle: 'bold-clean' | 'metallic-gold' | 'neon-glow' | 'glitch-red-blue' | 'serif-elegant' | 'retro-vhs' | 'cyberpunk-hacker' | 'editorial-minimal';
   textAnimation: 'kinetic-spring' | 'fade' | 'slide-up' | 'zoom-in' | 'slide-left' | 'typewriter' | 'none';
-  imageAnimation: 'pan' | 'zoom-slow' | 'zoom-fast-beat' | 'shake-beat' | 'zoom-in-out' | 'slide-slow' | 'none';
-  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'none';
-  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'none';
-  lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'light-leak-warm' | 'cyber-pulse' | 'none';
+  imageAnimation: 'pan' | 'zoom-slow' | 'zoom-fast-beat' | 'shake-beat' | 'zoom-in-out' | 'slide-slow' | 'spin-transition' | 'whip-left' | 'whip-right' | 'bounce-beat' | 'none';
+  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'optical-glow' | 'rgb-split-beat' | 'lens-flare' | 'none';
+  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'fire-embers' | 'none';
+  lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'light-leak-warm' | 'cyber-pulse' | 'film-burn-fast' | 'none';
   letterbox: boolean;
   border: 'none' | 'gold-filigree' | 'neon-frame' | 'vhs-borders' | 'cyber-scanner' | 'thin-line';
+  layout?: 'framed' | 'full-bleed' | 'full-width-centered';
+  colorFilter?: 'none' | 'teal-orange' | 'vintage-warm' | 'emerald-luxury' | 'noir-bw' | 'hdr-vibrant';
 }
 
 export interface VisualTheme {
@@ -730,6 +732,67 @@ const TypewriterText: React.FC<{ text: string; font: string; style: React.CSSPro
   );
 };
 
+// Fire embers rising up
+const FireEmbersField: React.FC<{ count?: number }> = ({ count = 20 }) => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const embers = useMemo(() => Array.from({ length: count }, (_, i) => ({
+    x: (i * (width - 100) / count) + 50,
+    startY: height + 50,
+    speed: 2.5 + (i % 3) * 1.0,
+    size: 3 + (i % 4) * 2.5,
+    phase: i * 8.7,
+  })), [count, width, height]);
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 12 }}>
+      {embers.map((e, idx) => {
+        const y = e.startY - ((frame * e.speed + e.phase * 5) % (height + 150));
+        const drift = Math.sin(frame * 0.05 + e.phase) * 20;
+        const opacity = 0.4 + 0.5 * Math.sin(frame * 0.04 + e.phase);
+        return (
+          <div key={idx} style={{
+            position: 'absolute', left: e.x + drift, top: y,
+            width: e.size, height: e.size,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ff9f43, #ee5253)',
+            boxShadow: '0 0 10px #ff9f43, 0 0 4px #ee5253',
+            opacity,
+          }} />
+        );
+      })}
+    </div>
+  );
+};
+
+// Film Burn light leak
+const FilmBurnLeak: React.FC = () => {
+  const frame = useCurrentFrame();
+  const op = (frame % 8 < 3) ? 0.35 : (frame % 8 < 6 ? 0.15 : 0.05);
+  const hue = (frame * 65) % 360;
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 13,
+      background: `radial-gradient(circle at ${40 + Math.sin(frame) * 20}% ${50 + Math.cos(frame * 0.5) * 20}%, hsla(${hue}, 100%, 60%, ${op}) 0%, transparent 80%)`,
+      mixBlendMode: 'screen',
+    }} />
+  );
+};
+
+// Lens Flare overlay
+const LensFlare: React.FC = () => {
+  const frame = useCurrentFrame();
+  const fx = 30 + Math.sin(frame * 0.03) * 15;
+  const fy = 25 + Math.cos(frame * 0.02) * 10;
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 11,
+      background: `radial-gradient(circle at ${fx}% ${fy}%, rgba(255, 255, 255, 0.8) 0%, rgba(253, 224, 71, 0.4) 8%, rgba(239, 68, 68, 0.15) 25%, transparent 60%)`,
+      mixBlendMode: 'screen',
+    }} />
+  );
+};
+
 // ==========================================
 // 4. TEXT STYLING WORKER
 // ==========================================
@@ -839,9 +902,27 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // --- Layout Mode Determination ---
+  const layout = scene.layout || 'framed';
+
   // --- Dynamic Image Scaling & Animation ---
   let imageTransform = 'none';
   let imageFilter: string = 'none';
+
+  // --- Apply Color Grading Filters ---
+  if (scene.colorFilter && scene.colorFilter !== 'none') {
+    if (scene.colorFilter === 'teal-orange') {
+      imageFilter = 'contrast(1.1) saturate(1.25) sepia(0.15) hue-rotate(-10deg)';
+    } else if (scene.colorFilter === 'vintage-warm') {
+      imageFilter = 'sepia(0.35) contrast(0.95) brightness(1.05) saturate(0.9)';
+    } else if (scene.colorFilter === 'emerald-luxury') {
+      imageFilter = 'contrast(1.15) brightness(0.92) saturate(1.15) hue-rotate(15deg) sepia(0.05)';
+    } else if (scene.colorFilter === 'noir-bw') {
+      imageFilter = 'grayscale(1) contrast(1.35) brightness(0.95)';
+    } else if (scene.colorFilter === 'hdr-vibrant') {
+      imageFilter = 'contrast(1.25) saturate(1.5) brightness(1.02)';
+    }
+  }
 
   if (scene.imageUrl) {
     if (scene.imageAnimation === 'zoom-slow') {
@@ -887,20 +968,51 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         extrapolateRight: 'clamp',
       });
       imageTransform = `translateX(${translateX}px) scale(1.05)`;
+    } else if (scene.imageAnimation === 'spin-transition') {
+      const rot = interpolate(frame, [0, 15, scene.durationInFrames - 15, scene.durationInFrames], [90, 0, 0, -90], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
+      imageTransform = `scale(1.25) rotate(${rot}deg)`;
+    } else if (scene.imageAnimation === 'whip-left') {
+      const tx = interpolate(frame, [0, 12], [-600, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
+      imageTransform = `translateX(${tx}px) scale(1.05)`;
+    } else if (scene.imageAnimation === 'whip-right') {
+      const tx = interpolate(frame, [0, 12], [600, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
+      imageTransform = `translateX(${tx}px) scale(1.05)`;
+    } else if (scene.imageAnimation === 'bounce-beat') {
+      const beat = spring({
+        frame: frame % 15,
+        fps,
+        config: { damping: 5, stiffness: 185, mass: 0.6 }
+      });
+      const bScale = interpolate(beat, [0, 0.3, 1], [1.0, 1.15, 1.0]);
+      imageTransform = `scale(${bScale})`;
     }
   }
 
-  // --- Chromatic Glitch screen filters & blur transitions ---
+  // --- Chromatic Glitch / Blur screen filters ---
   if (scene.effect === 'glitch') {
     const isGlitch = frame % 6 === 0;
     const glitchAmp = Math.sin(frame * 3) * 6;
     if (isGlitch) {
-      imageFilter = `hue-rotate(${glitchAmp * 12}deg) contrast(1.4) saturate(1.8)`;
-      // Mix glitch translation with existing animations
+      imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}hue-rotate(${glitchAmp * 12}deg) contrast(1.4) saturate(1.8)`;
+      // Mix glitch translation
       imageTransform = `${imageTransform} translate(${glitchAmp * 1.5}px, ${glitchAmp * 0.5}px) skewX(${glitchAmp}deg)`;
     }
   } else if (scene.effect === 'radial-blur') {
-    imageFilter = `blur(${Math.min(12, frame < 8 ? (8 - frame) * 2.5 : (frame > scene.durationInFrames - 8 ? (frame - (scene.durationInFrames - 8)) * 2.5 : 0))}px)`;
+    const blurVal = Math.min(12, frame < 8 ? (8 - frame) * 2.5 : (frame > scene.durationInFrames - 8 ? (frame - (scene.durationInFrames - 8)) * 2.5 : 0));
+    if (blurVal > 0) {
+      imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}blur(${blurVal}px)`;
+    }
+  } else if (scene.effect === 'optical-glow') {
+    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.15) contrast(1.05)`;
   }
 
   // Fade animations for background/transition
@@ -908,6 +1020,47 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
+
+  // Layout Box Styling logic
+  let frameStyle: React.CSSProperties = {};
+  if (layout === 'full-bleed') {
+    frameStyle = {
+      position: 'absolute',
+      inset: 0,
+      zIndex: 4,
+      overflow: 'hidden',
+    };
+  } else if (layout === 'full-width-centered') {
+    frameStyle = {
+      position: 'absolute',
+      top: '50%',
+      left: 0, right: 0,
+      transform: 'translateY(-50%)',
+      height: '62%',
+      zIndex: 4,
+      overflow: 'hidden',
+    };
+  } else {
+    // Default framed layout
+    frameStyle = {
+      position: 'absolute',
+      top: '12%',
+      left: '8%',
+      right: '8%',
+      height: '62%',
+      zIndex: 4,
+      overflow: 'hidden',
+      borderRadius: '24px',
+      border: scene.border === 'gold-filigree' 
+        ? '2.5px solid rgba(212, 175, 55, 0.45)' 
+        : scene.border === 'thin-line'
+        ? '1px solid rgba(255, 255, 255, 0.25)'
+        : '2.5px solid rgba(255, 255, 255, 0.1)',
+      boxShadow: '0 30px 60px rgba(0,0,0,0.85)',
+    };
+  }
+
+  const imageObjFit = layout === 'full-bleed' ? 'cover' : 'contain';
 
   return (
     <AbsoluteFill style={{ opacity: sceneOpacity }}>
@@ -922,8 +1075,8 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         }}
       />
 
-      {/* 2. Blurred duplicate background for premium Stage */}
-      {scene.imageUrl && (
+      {/* 2. Blurred duplicate background for premium Stage (skipped in full bleed) */}
+      {scene.imageUrl && layout !== 'full-bleed' && (
         <div 
           style={{
             position: 'absolute',
@@ -940,66 +1093,64 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         />
       )}
 
-      {/* 3. Ambient radial glows */}
-      <div style={{
-        position: 'absolute',
-        inset: 27,
-        boxShadow: scene.border === 'gold-filigree' 
-          ? 'inset 0 0 120px rgba(212, 175, 55, 0.22)' 
-          : 'inset 0 0 90px rgba(255, 255, 255, 0.08)',
-        borderRadius: '18px',
-        pointerEvents: 'none',
-        zIndex: 5,
-      }} />
+      {/* 3. Ambient radial glows (skipped in full bleed) */}
+      {layout !== 'full-bleed' && (
+        <div style={{
+          position: 'absolute',
+          inset: 27,
+          boxShadow: scene.border === 'gold-filigree' 
+            ? 'inset 0 0 120px rgba(212, 175, 55, 0.22)' 
+            : 'inset 0 0 90px rgba(255, 255, 255, 0.08)',
+          borderRadius: '18px',
+          pointerEvents: 'none',
+          zIndex: 5,
+        }} />
+      )}
 
-      {/* 4. Main media frame with optional Chromatic Aberration */}
+      {/* 4. Main media frame */}
       {scene.imageUrl && (
-        <div 
-          style={{
-            position: 'absolute',
-            top: '12%',
-            left: '8%',
-            right: '8%',
-            height: '62%',
-            zIndex: 4,
-            overflow: 'hidden',
-            borderRadius: '24px',
-            border: scene.border === 'gold-filigree' 
-              ? '2.5px solid rgba(212, 175, 55, 0.45)' 
-              : scene.border === 'thin-line'
-              ? '1px solid rgba(255, 255, 255, 0.25)'
-              : '2.5px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: '0 30px 60px rgba(0,0,0,0.85)',
-          }}
-        >
-          {scene.effect === 'chromatic-aberration' ? (
+        <div style={frameStyle}>
+          {scene.effect === 'chromatic-aberration' || scene.effect === 'rgb-split-beat' ? (
             <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
               <Img src={scene.imageUrl} style={{
                 position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', transform: `${imageTransform} translate(4px, 0px)`,
+                objectFit: imageObjFit, transform: `${imageTransform} translate(4px, 0px)`,
                 filter: 'drop-shadow(rgba(255,0,0,0.6) 0px 0px 0px) brightness(1.2)',
                 mixBlendMode: 'screen',
               }} />
               <Img src={scene.imageUrl} style={{
                 position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', transform: `${imageTransform} translate(-4px, 0px)`,
+                objectFit: imageObjFit, transform: `${imageTransform} translate(-4px, 0px)`,
                 filter: 'drop-shadow(rgba(0,255,255,0.6) 0px 0px 0px) brightness(1.2)',
                 mixBlendMode: 'screen',
               }} />
               <Img src={scene.imageUrl} style={{
                 position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', transform: imageTransform,
+                objectFit: imageObjFit, transform: imageTransform,
                 opacity: 0.6,
               }} />
             </div>
           ) : (
-            <Img src={scene.imageUrl} style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              transform: imageTransform,
-              filter: imageFilter,
-            }} />
+            <>
+              <Img src={scene.imageUrl} style={{
+                width: '100%',
+                height: '100%',
+                objectFit: imageObjFit,
+                transform: imageTransform,
+                filter: imageFilter === 'none' ? undefined : imageFilter,
+              }} />
+              {scene.effect === 'optical-glow' && (
+                <Img src={scene.imageUrl} style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%',
+                  objectFit: imageObjFit,
+                  transform: imageTransform,
+                  filter: 'blur(15px) brightness(1.5) contrast(1.3)',
+                  mixBlendMode: 'screen',
+                  opacity: 0.65,
+                  pointerEvents: 'none',
+                }} />
+              )}
+            </>
           )}
         </div>
       )}
@@ -1150,12 +1301,16 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {/* VHS distortion tracking lines */}
       {scene.effect === 'vhs-distortion' && <VhsDistortion />}
 
+      {/* Optical Lens Flare */}
+      {scene.effect === 'lens-flare' && <LensFlare />}
+
       {/* 8. Light Leaks */}
       {scene.lightLeak === 'police-flash' && <PoliceFlash />}
       {scene.lightLeak === 'aurora' && <AuroraLeak />}
       {scene.lightLeak === 'gold-glow' && <GoldLeak />}
       {scene.lightLeak === 'light-leak-warm' && <WarmLightLeak />}
       {scene.lightLeak === 'cyber-pulse' && <CyberPulseLeak />}
+      {scene.lightLeak === 'film-burn-fast' && <FilmBurnLeak />}
 
       {/* 9. Borders */}
       {scene.border === 'gold-filigree' && <GoldFiligreeBorder />}
@@ -1172,6 +1327,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.particleOverlay === 'sparkles' && <SparkleField count={18} />}
       {scene.particleOverlay === 'dust-particles' && <DustField />}
       {scene.particleOverlay === 'digital-rain' && <DigitalRainField />}
+      {scene.particleOverlay === 'fire-embers' && <FireEmbersField />}
 
     </AbsoluteFill>
   );
