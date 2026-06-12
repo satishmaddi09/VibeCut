@@ -855,7 +855,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
   );
 };
 
-export const VideoComposition: React.FC<{ storyboard: Storyboard }> = ({ storyboard }) => {
+export const VideoComposition: React.FC<{ storyboard?: Storyboard }> = ({ storyboard = defaultStoryboard }) => {
   const theme = storyboard.visualTheme;
   let currentStartFrame = 0;
 
