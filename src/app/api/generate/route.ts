@@ -10,12 +10,17 @@ const storyboardSchema: Schema = {
     visualTheme: {
       type: Type.OBJECT,
       properties: {
+        template: { 
+          type: Type.STRING, 
+          enum: ["maggam-cinematic", "luxury-gold-crazy", "clean-glow"],
+          description: "Theme template. Choose 'maggam-cinematic' for classic elegant maggam work, 'luxury-gold-crazy' for fancy border and gold flakes, and 'clean-glow' for simple modern look."
+        },
         backgroundGradientStart: { type: Type.STRING, description: "CSS color hex code, e.g., #8b5cf6" },
         backgroundGradientEnd: { type: Type.STRING, description: "CSS color hex code, e.g., #ec4899" },
         textColor: { type: Type.STRING, description: "CSS color hex code, e.g., #ffffff" },
         fontFamily: { type: Type.STRING, description: "Font name, e.g., Inter, Outfit" },
       },
-      required: ["backgroundGradientStart", "backgroundGradientEnd", "textColor", "fontFamily"],
+      required: ["template", "backgroundGradientStart", "backgroundGradientEnd", "textColor", "fontFamily"],
     },
     scenes: {
       type: Type.ARRAY,
