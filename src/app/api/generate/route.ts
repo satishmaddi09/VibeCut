@@ -122,9 +122,10 @@ export async function POST(req: Request) {
     }
 
     const contents: any[] = [];
+    const initialParts: any[] = [];
     
     if (imageUrls && imageUrls.length > 0) {
-      contents.push({
+      initialParts.push({
         text: `Here are the images uploaded by the user. Analyze their visual themes and structure them into the scene array using 'imageIdx' (from 0 to ${imageUrls.length - 1}).`
       });
 
@@ -135,7 +136,7 @@ export async function POST(req: Request) {
             const buffer = await imgRes.arrayBuffer();
             const base64Str = Buffer.from(buffer).toString('base64');
             const mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
-            contents.push({
+            initialParts.push({
               inlineData: {
                 data: base64Str,
                 mimeType: mimeType
@@ -148,12 +149,18 @@ export async function POST(req: Request) {
       }
     }
 
-    contents.push({
+    initialParts.push({
       text: `Create a professional, highly customized storyboard based on this user prompt: "${prompt}".
       
       Requirements:
       - Map out the exact timing, typography styles, screen effects, overlays, and transitions to build a premium video.
       - Total duration must be 6 to 15 seconds (180 to 450 frames at 30fps).`
+    });
+
+    // Enforce role-based structure for all items in contents array
+    contents.push({
+      role: 'user',
+      parts: initialParts
     });
 
     console.log("Calling Gemini API with self-correcting validation loop...");
