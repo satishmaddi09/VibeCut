@@ -16,14 +16,14 @@ export interface SceneData {
   imageIdx: number;
   imageUrl?: string | null;
   textOverlay: string;
-  textStyle: 'bold-clean' | 'metallic-gold' | 'neon-glow' | 'glitch-red-blue' | 'serif-elegant';
-  textAnimation: 'kinetic-spring' | 'fade' | 'slide-up' | 'zoom-in' | 'none';
-  imageAnimation: 'pan' | 'zoom-slow' | 'zoom-fast-beat' | 'shake-beat' | 'none';
-  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'none';
-  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'none';
-  lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'none';
+  textStyle: 'bold-clean' | 'metallic-gold' | 'neon-glow' | 'glitch-red-blue' | 'serif-elegant' | 'retro-vhs' | 'cyberpunk-hacker' | 'editorial-minimal';
+  textAnimation: 'kinetic-spring' | 'fade' | 'slide-up' | 'zoom-in' | 'slide-left' | 'typewriter' | 'none';
+  imageAnimation: 'pan' | 'zoom-slow' | 'zoom-fast-beat' | 'shake-beat' | 'zoom-in-out' | 'slide-slow' | 'none';
+  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'none';
+  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'none';
+  lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'light-leak-warm' | 'cyber-pulse' | 'none';
   letterbox: boolean;
-  border: 'none' | 'gold-filigree' | 'neon-frame';
+  border: 'none' | 'gold-filigree' | 'neon-frame' | 'vhs-borders' | 'cyber-scanner' | 'thin-line';
 }
 
 export interface VisualTheme {
@@ -534,6 +534,202 @@ const GoldLeak: React.FC = () => {
   );
 };
 
+// Warm vintage light leak (red/orange gradient)
+const WarmLightLeak: React.FC = () => {
+  const frame = useCurrentFrame();
+  const driftX = Math.cos(frame * 0.015) * 80;
+  const driftY = Math.sin(frame * 0.02) * 50;
+  const scale = 1.0 + 0.15 * Math.sin(frame * 0.01);
+  return (
+    <div style={{
+      position: 'absolute', inset: -100, pointerEvents: 'none', zIndex: 13,
+      background: 'radial-gradient(circle at 75% 80%, rgba(253, 186, 116, 0.25) 0%, rgba(239, 68, 68, 0.18) 45%, transparent 75%)',
+      transform: `translate(${driftX}px, ${driftY}px) scale(${scale})`,
+      mixBlendMode: 'screen',
+    }} />
+  );
+};
+
+// Cyber pulse light leak (cyan/magenta shifting glow)
+const CyberPulseLeak: React.FC = () => {
+  const frame = useCurrentFrame();
+  const glow = 0.5 + 0.5 * Math.sin(frame * 0.15);
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 13,
+      background: `radial-gradient(circle at 50% 50%, rgba(6, 182, 212, ${0.1 * glow}) 0%, rgba(236, 72, 153, ${0.1 * (1 - glow)}) 100%)`,
+      mixBlendMode: 'color-dodge',
+    }} />
+  );
+};
+
+// Analog VHS Distortion tracking line
+const VhsDistortion: React.FC = () => {
+  const frame = useCurrentFrame();
+  const trackingLineY = (frame * 6) % 1080;
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 12 }}>
+      {/* Tracking line */}
+      <div style={{
+        position: 'absolute',
+        top: trackingLineY,
+        left: 0, right: 0,
+        height: 12,
+        background: 'rgba(255, 255, 255, 0.15)',
+        boxShadow: '0 0 10px rgba(255, 255, 255, 0.4)',
+        filter: 'blur(1px)',
+        opacity: (frame % 20 < 4) ? 0.8 : 0.2,
+      }} />
+      {/* CRT scanlines overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%)',
+        backgroundSize: '100% 4px',
+        opacity: 0.15,
+      }} />
+    </div>
+  );
+};
+
+// VHS Viewfinder Borders
+const VhsBorders: React.FC = () => {
+  const frame = useCurrentFrame();
+  const showDot = Math.floor(frame / 15) % 2 === 0;
+  return (
+    <div style={{
+      position: 'absolute', inset: 30,
+      border: '2px solid rgba(255, 255, 255, 0.2)',
+      pointerEvents: 'none',
+      zIndex: 14,
+      fontFamily: 'Courier New, monospace',
+      fontSize: 18,
+      color: '#ffffff',
+      textShadow: '0 1px 3px #000',
+      padding: 20,
+    }}>
+      <div style={{ position: 'absolute', top: 20, left: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 12, height: 12, borderRadius: '50%',
+          backgroundColor: '#ff0000',
+          opacity: showDot ? 1 : 0.2,
+        }} />
+        <span>REC</span>
+      </div>
+      <div style={{ position: 'absolute', top: 20, right: 20 }}>
+        <span>[|||] 100%</span>
+      </div>
+      <div style={{ position: 'absolute', bottom: 20, left: 20 }}>
+        <span>PLAY</span>
+      </div>
+      <div style={{ position: 'absolute', bottom: 20, right: 20 }}>
+        <span>00:00:${String(Math.floor(frame / 30)).padStart(2, '0')}</span>
+      </div>
+    </div>
+  );
+};
+
+// Cyberpunk neon scanner & reticles
+const CyberScannerBorder: React.FC = () => {
+  const frame = useCurrentFrame();
+  const progress = (frame % 60) / 60;
+  const scanY = progress < 0.5 ? progress * 2 * 100 : (1 - (progress - 0.5) * 2) * 100;
+  return (
+    <>
+      <div style={{
+        position: 'absolute', inset: 25,
+        border: '2px solid #39ff14',
+        boxShadow: '0 0 10px rgba(57, 255, 20, 0.4), inset 0 0 10px rgba(57, 255, 20, 0.4)',
+        pointerEvents: 'none',
+        zIndex: 14,
+      }} />
+      <div style={{ position: 'absolute', top: 15, left: 15, width: 30, height: 30, borderTop: '4px solid #fff', borderLeft: '4px solid #fff', zIndex: 14 }} />
+      <div style={{ position: 'absolute', top: 15, right: 15, width: 30, height: 30, borderTop: '4px solid #fff', borderRight: '4px solid #fff', zIndex: 14 }} />
+      <div style={{ position: 'absolute', bottom: 15, left: 15, width: 30, height: 30, borderBottom: '4px solid #fff', borderLeft: '4px solid #fff', zIndex: 14 }} />
+      <div style={{ position: 'absolute', bottom: 15, right: 15, width: 30, height: 30, borderBottom: '4px solid #fff', borderRight: '4px solid #fff', zIndex: 14 }} />
+      <div style={{
+        position: 'absolute',
+        top: `${scanY}%`,
+        left: 27, right: 27,
+        height: 3,
+        backgroundColor: '#39ff14',
+        boxShadow: '0 0 12px #39ff14, 0 0 4px #fff',
+        opacity: 0.8,
+        zIndex: 14,
+        pointerEvents: 'none',
+      }} />
+    </>
+  );
+};
+
+// Digital matrix binary rain code particles
+const DigitalRainField: React.FC<{ count?: number }> = ({ count = 12 }) => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const columns = useMemo(() => Array.from({ length: count }, (_, i) => ({
+    x: (i * (width - 100) / count) + 50,
+    speed: 4 + (i % 3) * 2,
+    phase: i * 7.5,
+    chars: Array.from({ length: 15 }, () => Math.random() > 0.5 ? '1' : '0'),
+  })), [count, width]);
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 12, fontFamily: 'monospace', fontSize: 16, color: '#39ff14' }}>
+      {columns.map((c, idx) => {
+        const y = ((frame * c.speed + c.phase * 10) % (height + 300)) - 200;
+        return (
+          <div key={idx} style={{
+            position: 'absolute', left: c.x, top: y,
+            display: 'flex', flexDirection: 'column', gap: 4,
+            opacity: 0.7,
+            textShadow: '0 0 8px #39ff14',
+          }}>
+            {c.chars.map((char, ci) => (
+              <span key={ci} style={{
+                opacity: (ci === c.chars.length - 1) ? 1 : ci / c.chars.length,
+                color: (ci === c.chars.length - 1) ? '#ffffff' : '#39ff14',
+              }}>
+                {char}
+              </span>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Minimalist thin-line border
+const ThinLineBorder: React.FC = () => {
+  return (
+    <div style={{
+      position: 'absolute', inset: 40,
+      border: '1px solid rgba(255, 255, 255, 0.25)',
+      pointerEvents: 'none',
+      zIndex: 14,
+    }} />
+  );
+};
+
+// Typewriter text animation component
+const TypewriterText: React.FC<{ text: string; font: string; style: React.CSSProperties }> = ({ text, font, style }) => {
+  const frame = useCurrentFrame();
+  const charsToShow = Math.floor(frame / 1.5);
+  const visibleText = text.substring(0, charsToShow);
+  const showCursor = Math.floor(frame / 6) % 2 === 0;
+
+  return (
+    <div style={{
+      position: 'absolute', left: 56, right: 56, bottom: '18%', zIndex: 15,
+      fontFamily: font,
+      textAlign: 'center',
+      ...style
+    }}>
+      {visibleText}
+      {showCursor && <span style={{ color: style.color || '#fff' }}>|</span>}
+    </div>
+  );
+};
+
 // ==========================================
 // 4. TEXT STYLING WORKER
 // ==========================================
@@ -681,10 +877,20 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       const shakeY = Math.cos(frame * 2.9) * 14 * decay;
       const zoom = 1.05 + 0.05 * decay;
       imageTransform = `translate(${shakeX}px, ${shakeY}px) scale(${zoom})`;
+    } else if (scene.imageAnimation === 'zoom-in-out') {
+      const pulse = Math.sin(frame * 0.12) * 0.08;
+      const zoom = 1.05 + pulse;
+      imageTransform = `scale(${zoom})`;
+    } else if (scene.imageAnimation === 'slide-slow') {
+      const translateX = interpolate(frame, [0, scene.durationInFrames], [-15, 15], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
+      imageTransform = `translateX(${translateX}px) scale(1.05)`;
     }
   }
 
-  // --- Chromatic Glitch screen filters ---
+  // --- Chromatic Glitch screen filters & blur transitions ---
   if (scene.effect === 'glitch') {
     const isGlitch = frame % 6 === 0;
     const glitchAmp = Math.sin(frame * 3) * 6;
@@ -693,6 +899,8 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       // Mix glitch translation with existing animations
       imageTransform = `${imageTransform} translate(${glitchAmp * 1.5}px, ${glitchAmp * 0.5}px) skewX(${glitchAmp}deg)`;
     }
+  } else if (scene.effect === 'radial-blur') {
+    imageFilter = `blur(${Math.min(12, frame < 8 ? (8 - frame) * 2.5 : (frame > scene.durationInFrames - 8 ? (frame - (scene.durationInFrames - 8)) * 2.5 : 0))}px)`;
   }
 
   // Fade animations for background/transition
@@ -744,7 +952,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         zIndex: 5,
       }} />
 
-      {/* 4. Main media frame */}
+      {/* 4. Main media frame with optional Chromatic Aberration */}
       {scene.imageUrl && (
         <div 
           style={{
@@ -758,59 +966,164 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
             borderRadius: '24px',
             border: scene.border === 'gold-filigree' 
               ? '2.5px solid rgba(212, 175, 55, 0.45)' 
+              : scene.border === 'thin-line'
+              ? '1px solid rgba(255, 255, 255, 0.25)'
               : '2.5px solid rgba(255, 255, 255, 0.1)',
             boxShadow: '0 30px 60px rgba(0,0,0,0.85)',
           }}
         >
-          <Img src={scene.imageUrl} style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            transform: imageTransform,
-            filter: imageFilter,
-          }} />
+          {scene.effect === 'chromatic-aberration' ? (
+            <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+              <Img src={scene.imageUrl} style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'contain', transform: `${imageTransform} translate(4px, 0px)`,
+                filter: 'drop-shadow(rgba(255,0,0,0.6) 0px 0px 0px) brightness(1.2)',
+                mixBlendMode: 'screen',
+              }} />
+              <Img src={scene.imageUrl} style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'contain', transform: `${imageTransform} translate(-4px, 0px)`,
+                filter: 'drop-shadow(rgba(0,255,255,0.6) 0px 0px 0px) brightness(1.2)',
+                mixBlendMode: 'screen',
+              }} />
+              <Img src={scene.imageUrl} style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'contain', transform: imageTransform,
+                opacity: 0.6,
+              }} />
+            </div>
+          ) : (
+            <Img src={scene.imageUrl} style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              transform: imageTransform,
+              filter: imageFilter,
+            }} />
+          )}
         </div>
       )}
 
       {/* 5. Custom typography layouts */}
       {scene.textOverlay && (
         <>
-          {scene.textStyle === 'metallic-gold' && (
-            <PremiumKineticText text={scene.textOverlay} delay={6} />
-          )}
+          {scene.textAnimation === 'typewriter' ? (
+            <TypewriterText 
+              text={scene.textOverlay}
+              font={scene.textStyle === 'retro-vhs' || scene.textStyle === 'cyberpunk-hacker' ? 'monospace' : theme.fontFamily}
+              style={{
+                fontSize: scene.textStyle === 'editorial-minimal' ? '32px' : '46px',
+                fontWeight: scene.textStyle === 'editorial-minimal' ? 300 : 800,
+                color: scene.textStyle === 'cyberpunk-hacker' ? '#39ff14' : theme.textColor || '#ffffff',
+                letterSpacing: scene.textStyle === 'editorial-minimal' ? '8px' : 'normal',
+                textTransform: 'uppercase',
+                textShadow: scene.textStyle === 'cyberpunk-hacker' 
+                  ? '0 0 8px #39ff14' 
+                  : scene.textStyle === 'retro-vhs'
+                  ? '2px 2px #06b6d4, -2px -2px #eab308, 0 4px 10px rgba(0,0,0,0.9)'
+                  : '0 4px 10px rgba(0,0,0,0.9)',
+              }}
+            />
+          ) : (
+            <>
+              {scene.textStyle === 'metallic-gold' && (
+                <PremiumKineticText text={scene.textOverlay} delay={6} />
+              )}
 
-          {scene.textStyle === 'glitch-red-blue' && (
-            <GlitchText text={scene.textOverlay} font={theme.fontFamily} />
-          )}
+              {scene.textStyle === 'glitch-red-blue' && (
+                <GlitchText text={scene.textOverlay} font={theme.fontFamily} />
+              )}
 
-          {scene.textStyle === 'neon-glow' && (
-            <NeonGlowText text={scene.textOverlay} font={theme.fontFamily} color={theme.textColor} />
-          )}
+              {scene.textStyle === 'neon-glow' && (
+                <NeonGlowText text={scene.textOverlay} font={theme.fontFamily} color={theme.textColor} />
+              )}
 
-          {(scene.textStyle === 'bold-clean' || scene.textStyle === 'serif-elegant') && (
-            <div style={{
-              fontFamily: theme.fontFamily || 'sans-serif',
-              color: theme.textColor || '#ffffff',
-              fontSize: '54px',
-              fontWeight: scene.textStyle === 'bold-clean' ? 900 : 300,
-              fontStyle: scene.textStyle === 'serif-elegant' ? 'italic' : 'normal',
-              textAlign: 'center',
-              padding: '0 60px',
-              lineHeight: 1.25,
-              textShadow: '0 4px 20px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.4)',
-              zIndex: 15,
-              width: '100%',
-              position: 'absolute',
-              bottom: '18%',
-              transform: scene.textAnimation === 'slide-up' 
-                ? `translateY(${interpolate(frame, [0, 15], [35, 0], { extrapolateRight: 'clamp' })}px)`
-                : scene.textAnimation === 'zoom-in'
-                ? `scale(${spring({ frame, fps, config: { damping: 10 } })})`
-                : undefined,
-              opacity: interpolate(frame, getFadeRange(scene.durationInFrames, 10), [0, 1, 1, 0])
-            }}>
-              {scene.textOverlay}
-            </div>
+              {scene.textStyle === 'retro-vhs' && (
+                <div style={{
+                  position: 'absolute', left: 56, right: 56, bottom: '18%', zIndex: 15,
+                  fontFamily: 'Courier New, monospace', fontSize: '50px', fontWeight: 900, textTransform: 'uppercase',
+                  textAlign: 'center', color: '#ffffff',
+                  textShadow: '2px 2px #06b6d4, -2px -2px #eab308, 0 4px 10px rgba(0,0,0,0.9)',
+                  transform: scene.textAnimation === 'slide-up' 
+                    ? `translateY(${interpolate(frame, [0, 15], [35, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'slide-left'
+                    ? `translateX(${interpolate(frame, [0, 15], [-100, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'zoom-in'
+                    ? `scale(${spring({ frame, fps, config: { damping: 10 } })})`
+                    : undefined,
+                  opacity: interpolate(frame, getFadeRange(scene.durationInFrames, 10), [0, 1, 1, 0])
+                }}>
+                  {scene.textOverlay}
+                </div>
+              )}
+
+              {scene.textStyle === 'cyberpunk-hacker' && (
+                <div style={{
+                  position: 'absolute', left: 56, right: 56, bottom: '18%', zIndex: 15,
+                  fontFamily: 'monospace', fontSize: '46px', fontWeight: 700,
+                  textAlign: 'center', color: '#39ff14',
+                  textShadow: '0 0 8px rgba(57,255,20,0.7), 0 4px 10px rgba(0,0,0,0.9)',
+                  transform: scene.textAnimation === 'slide-up' 
+                    ? `translateY(${interpolate(frame, [0, 15], [35, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'slide-left'
+                    ? `translateX(${interpolate(frame, [0, 15], [-100, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'zoom-in'
+                    ? `scale(${spring({ frame, fps, config: { damping: 10 } })})`
+                    : undefined,
+                  opacity: interpolate(frame, getFadeRange(scene.durationInFrames, 10), [0, 1, 1, 0])
+                }}>
+                  {scene.textOverlay}
+                  <span style={{ opacity: Math.floor(frame / 10) % 2 === 0 ? 1 : 0 }}>_</span>
+                </div>
+              )}
+
+              {scene.textStyle === 'editorial-minimal' && (
+                <div style={{
+                  position: 'absolute', left: 56, right: 56, bottom: '18%', zIndex: 15,
+                  fontFamily: theme.fontFamily || 'sans-serif', fontSize: '32px', fontWeight: 300,
+                  textAlign: 'center', color: '#ffffff', letterSpacing: '8px', textTransform: 'uppercase',
+                  textShadow: '0 4px 12px rgba(0,0,0,0.8)',
+                  transform: scene.textAnimation === 'slide-up' 
+                    ? `translateY(${interpolate(frame, [0, 15], [35, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'slide-left'
+                    ? `translateX(${interpolate(frame, [0, 15], [-100, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'zoom-in'
+                    ? `scale(${spring({ frame, fps, config: { damping: 10 } })})`
+                    : undefined,
+                  opacity: interpolate(frame, getFadeRange(scene.durationInFrames, 10), [0, 1, 1, 0])
+                }}>
+                  {scene.textOverlay}
+                </div>
+              )}
+
+              {(scene.textStyle === 'bold-clean' || scene.textStyle === 'serif-elegant') && (
+                <div style={{
+                  fontFamily: theme.fontFamily || 'sans-serif',
+                  color: theme.textColor || '#ffffff',
+                  fontSize: '54px',
+                  fontWeight: scene.textStyle === 'bold-clean' ? 900 : 300,
+                  fontStyle: scene.textStyle === 'serif-elegant' ? 'italic' : 'normal',
+                  textAlign: 'center',
+                  padding: '0 60px',
+                  lineHeight: 1.25,
+                  textShadow: '0 4px 20px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.4)',
+                  zIndex: 15,
+                  width: '100%',
+                  position: 'absolute',
+                  bottom: '18%',
+                  transform: scene.textAnimation === 'slide-up' 
+                    ? `translateY(${interpolate(frame, [0, 15], [35, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'slide-left'
+                    ? `translateX(${interpolate(frame, [0, 15], [-100, 0], { extrapolateRight: 'clamp' })}px)`
+                    : scene.textAnimation === 'zoom-in'
+                    ? `scale(${spring({ frame, fps, config: { damping: 10 } })})`
+                    : undefined,
+                  opacity: interpolate(frame, getFadeRange(scene.durationInFrames, 10), [0, 1, 1, 0])
+                }}>
+                  {scene.textOverlay}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -834,14 +1147,22 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         }} />
       )}
 
+      {/* VHS distortion tracking lines */}
+      {scene.effect === 'vhs-distortion' && <VhsDistortion />}
+
       {/* 8. Light Leaks */}
       {scene.lightLeak === 'police-flash' && <PoliceFlash />}
       {scene.lightLeak === 'aurora' && <AuroraLeak />}
       {scene.lightLeak === 'gold-glow' && <GoldLeak />}
+      {scene.lightLeak === 'light-leak-warm' && <WarmLightLeak />}
+      {scene.lightLeak === 'cyber-pulse' && <CyberPulseLeak />}
 
       {/* 9. Borders */}
       {scene.border === 'gold-filigree' && <GoldFiligreeBorder />}
       {scene.border === 'neon-frame' && <NeonBorder />}
+      {scene.border === 'vhs-borders' && <VhsBorders />}
+      {scene.border === 'cyber-scanner' && <CyberScannerBorder />}
+      {scene.border === 'thin-line' && <ThinLineBorder />}
 
       {/* 10. Letterbox */}
       {scene.letterbox && <Letterbox />}
@@ -850,6 +1171,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.particleOverlay === 'gold-flakes' && <GoldFlakesField />}
       {scene.particleOverlay === 'sparkles' && <SparkleField count={18} />}
       {scene.particleOverlay === 'dust-particles' && <DustField />}
+      {scene.particleOverlay === 'digital-rain' && <DigitalRainField />}
 
     </AbsoluteFill>
   );

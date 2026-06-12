@@ -27,18 +27,13 @@ jobs:
       - name: Install NPM Dependencies
         run: npm ci || npm install
 
-      - name: Extract Generated React Code & Config
-        # Extract the code string and configuration details into their respective files using env variable to avoid bash escaping issues
+      - name: Write Storyboard JSON
+        # Save the storyboard configuration payload to a local file using env variable to prevent escaping bugs
         env:
-          CLIENT_PAYLOAD_JSON: ${{ toJson(github.event.client_payload) }}
+          STORYBOARD_JSON: ${{ toJson(github.event.client_payload.storyboard) }}
         run: |
-          node -e "
-          const payload = JSON.parse(process.env.CLIENT_PAYLOAD_JSON);
-          const fs = require('fs');
-          fs.writeFileSync('remotion/VideoComposition.tsx', payload.code, 'utf8');
-          fs.writeFileSync('remotion/storyboard.json', JSON.stringify({ durationInFrames: payload.durationInFrames }), 'utf8');
-          console.log('Successfully wrote remotion/VideoComposition.tsx and remotion/storyboard.json!');
-          "
+          node -e "fs.writeFileSync('remotion/storyboard.json', process.env.STORYBOARD_JSON, 'utf8')"
+          echo "Storyboard written successfully!"
 
       - name: Ensure Chromium Browser is Installed
         run: npx remotion browser ensure

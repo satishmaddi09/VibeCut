@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
-import ts from 'typescript';
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -8,50 +7,102 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 const storyboardSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    code: { 
-      type: Type.STRING, 
-      description: "The complete, valid, self-contained TSX React code for the VideoComposition component. It must be valid TypeScript/React and export VideoComposition. Do not wrap it in markdown code blocks." 
+    visualTheme: {
+      type: Type.OBJECT,
+      properties: {
+        backgroundGradientStart: { type: Type.STRING, description: "CSS color hex code, e.g., #000000" },
+        backgroundGradientEnd: { type: Type.STRING, description: "CSS color hex code, e.g., #111111" },
+        textColor: { type: Type.STRING, description: "CSS color hex code, e.g., #ffffff" },
+        fontFamily: { type: Type.STRING, description: "Font name, e.g., Montserrat, Segoe UI, Impact, Playfair Display" },
+        watermarkText: { type: Type.STRING, description: "Brand name watermark, e.g., VibeCut, boutique name" },
+      },
+      required: ["backgroundGradientStart", "backgroundGradientEnd", "textColor", "fontFamily", "watermarkText"],
     },
-    durationInFrames: { 
-      type: Type.INTEGER, 
-      description: "The total duration of the generated composition in frames (30fps)." 
+    scenes: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.INTEGER },
+          durationInFrames: { type: Type.INTEGER, description: "Duration in frames. 30 frames = 1 second. Typically 30 to 120 frames. Use short durations (15-30 frames) for high-energy fast beat edits." },
+          imageIdx: { type: Type.INTEGER, description: "0-based index of the uploaded image to use, or -1 if no image." },
+          textOverlay: { type: Type.STRING, description: "Text to show. Set to empty string if no text is requested." },
+          textStyle: { 
+            type: Type.STRING, 
+            enum: ["bold-clean", "metallic-gold", "neon-glow", "glitch-red-blue", "serif-elegant", "retro-vhs", "cyberpunk-hacker", "editorial-minimal"],
+            description: "Visual style of text overlay."
+          },
+          textAnimation: { 
+            type: Type.STRING, 
+            enum: ["kinetic-spring", "fade", "slide-up", "zoom-in", "slide-left", "typewriter", "none"]
+          },
+          imageAnimation: { 
+            type: Type.STRING, 
+            enum: ["pan", "zoom-slow", "zoom-fast-beat", "shake-beat", "zoom-in-out", "slide-slow", "none"],
+            description: "Movement of the image."
+          },
+          effect: { 
+            type: Type.STRING, 
+            enum: ["glitch", "flash", "vignette", "film-grain", "vhs-distortion", "chromatic-aberration", "radial-blur", "none"],
+            description: "Main screen visual effect."
+          },
+          particleOverlay: { 
+            type: Type.STRING, 
+            enum: ["gold-flakes", "sparkles", "dust-particles", "digital-rain", "none"]
+          },
+          lightLeak: { 
+            type: Type.STRING, 
+            enum: ["aurora", "police-flash", "gold-glow", "light-leak-warm", "cyber-pulse", "none"],
+            description: "Atmospheric light leak."
+          },
+          letterbox: { type: Type.BOOLEAN, description: "Add cinematic black bars on top and bottom." },
+          border: { 
+            type: Type.STRING, 
+            enum: ["none", "gold-filigree", "neon-frame", "vhs-borders", "cyber-scanner", "thin-line"]
+          }
+        },
+        required: [
+          "id", "durationInFrames", "imageIdx", "textOverlay", "textStyle", 
+          "textAnimation", "imageAnimation", "effect", "particleOverlay", 
+          "lightLeak", "letterbox", "border"
+        ],
+      }
     }
   },
-  required: ["code", "durationInFrames"]
+  required: ["visualTheme", "scenes"]
 };
 
-// Check generated TSX code string for syntax errors before launching rendering
-function checkTypeScriptCompile(codeString: string): { success: boolean; error?: string } {
-  if (!codeString.includes('export const VideoComposition') && !codeString.includes('export function VideoComposition')) {
-    return { 
-      success: false, 
-      error: "Missing required component export: Your code must export the VideoComposition component (e.g., 'export const VideoComposition: React.FC = () => { ... }' or 'export function VideoComposition() { ... }')." 
-    };
+function validateStoryboard(storyboard: any) {
+  if (!storyboard) {
+    throw new Error("Storyboard object is null or undefined");
   }
-
-  try {
-    const result = ts.transpileModule(codeString, {
-      compilerOptions: {
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.CommonJS,
-        jsx: ts.JsxEmit.React,
-        noEmitOnError: true,
-      },
-      reportDiagnostics: true,
-    });
-
-    if (result.diagnostics && result.diagnostics.length > 0) {
-      const errorMsgs = result.diagnostics.map(diag => {
-        const message = ts.flattenDiagnosticMessageText(diag.messageText, '\n');
-        return `Syntax Error: ${message}`;
-      });
-      return { success: false, error: errorMsgs.join('\n') };
+  if (!storyboard.visualTheme) {
+    throw new Error("Missing 'visualTheme' object in storyboard");
+  }
+  const requiredTheme = ["backgroundGradientStart", "backgroundGradientEnd", "textColor", "fontFamily"];
+  for (const field of requiredTheme) {
+    if (!storyboard.visualTheme[field]) {
+      throw new Error(`Missing required visualTheme field: '${field}'`);
     }
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Unknown transpile error" };
   }
+  if (!storyboard.scenes || !Array.isArray(storyboard.scenes)) {
+    throw new Error("Missing or invalid 'scenes' array in storyboard");
+  }
+  if (storyboard.scenes.length === 0) {
+    throw new Error("Storyboard must contain at least one scene");
+  }
+  
+  storyboard.scenes.forEach((scene: any, idx: number) => {
+    if (typeof scene.id !== 'number') {
+      throw new Error(`Scene at index ${idx} is missing a numeric 'id'`);
+    }
+    if (typeof scene.durationInFrames !== 'number' || scene.durationInFrames <= 0) {
+      throw new Error(`Scene id ${scene.id} has invalid durationInFrames: ${scene.durationInFrames}`);
+    }
+    if (scene.durationInFrames < 10) {
+      throw new Error(`Scene id ${scene.id} duration (${scene.durationInFrames} frames) is too short. Minimum duration is 10 frames.`);
+    }
+  });
 }
 
 export async function POST(req: Request) {
@@ -72,17 +123,12 @@ export async function POST(req: Request) {
 
     const contents: any[] = [];
     const initialParts: any[] = [];
-
-    // Provide the images to Gemini
+    
     if (imageUrls && imageUrls.length > 0) {
       initialParts.push({
-        text: `Here are the public image URLs uploaded by the user:
-${imageUrls.map((url: string, i: number) => `Image ${i}: ${url}`).join('\n')}
-
-Please analyze these images (their styling, colors, and content) and reference these exact URLs directly inside your generated React code using '<Img src="URL" />' tags to render them.`
+        text: `Here are the images uploaded by the user. Analyze their visual themes and structure them into the scene array using 'imageIdx' (from 0 to ${imageUrls.length - 1}).`
       });
 
-      // Download and feed the binary image data to Gemini for visual analysis
       for (let i = 0; i < imageUrls.length; i++) {
         try {
           const imgRes = await fetch(imageUrls[i]);
@@ -98,19 +144,17 @@ Please analyze these images (their styling, colors, and content) and reference t
             });
           }
         } catch (err) {
-          console.error(`Error downloading image ${imageUrls[i]} for analysis:`, err);
+          console.error(`Error downloading image ${imageUrls[i]}:`, err);
         }
       }
-    } else {
-      initialParts.push({
-        text: `No photos uploaded. Please design a purely text-animated typographic video matching the visual theme.`
-      });
     }
 
     initialParts.push({
-      text: `Create the React code for a vertical video based on the user's prompt: "${prompt}".
+      text: `Create a professional, highly customized storyboard based on this user prompt: "${prompt}".
       
-      You must return a JSON response containing the "code" (tsx string) and "durationInFrames".`
+      Requirements:
+      - Map out the exact timing, typography styles, screen effects, overlays, and transitions to build a premium video.
+      - Total duration must be 6 to 15 seconds (180 to 450 frames at 30fps).`
     });
 
     contents.push({
@@ -118,7 +162,7 @@ Please analyze these images (their styling, colors, and content) and reference t
       parts: initialParts
     });
 
-    console.log("Calling Gemini API for React Code Generation...");
+    console.log("Calling Gemini API with self-correcting validation loop...");
     let storyboard: any = null;
     let attempts = 0;
     const maxAttempts = 3;
@@ -129,61 +173,63 @@ Please analyze these images (their styling, colors, and content) and reference t
           model: 'gemini-2.5-flash',
           contents: contents,
           config: {
-            systemInstruction: `You are VibeCut's Executive Video Director and Lead Developer AI.
-Your job is to generate a fully functional, self-contained Remotion React component inside a JSON response based on user prompts.
+            systemInstruction: `You are VibeCut's Executive Video Director AI.
+Your job is to convert user requests into a detailed, modular, frame-by-frame JSON storyboard.
+You must analyze the prompt style and select the appropriate modular settings to support ANY style of edit, including:
+- PHONK/GLITCH EDITS: Fast cuts (10-25 frames per scene), shake-beat, zoom-fast-beat or zoom-in-out image animations, glitch, flash or chromatic-aberration screen effects, police-flash or aurora light leaks, neon-glow or glitch-red-blue text styles, neon-frame or cyber-scanner borders, digital-rain or sparkles particle overlays, Montserrat/Impact fonts.
+- LUXURY/EMBROIDERY SHOWCASES: Moderate timing (60-90 frames), zoom-slow or slide-slow image animation, vignette, film-grain or radial-blur effects, gold-flakes or sparkles particle overlays, gold-glow light leaks, metallic-gold or serif-elegant text styles, gold-filigree borders, Playfair Display font.
+- RETRO/VINTAGE EDITS: Slow cuts (90-120 frames), pan image animation, film-grain or vhs-distortion effects, dust-particles overlay, light-leak-warm or aurora light leaks, retro-vhs or bold-clean text, vhs-borders, letterboxes.
+- CYBERPUNK/TECH EDITS: Fast-paced cuts, zoom-in-out or shake-beat image animations, chromatic-aberration or glitch effects, digital-rain particle overlays, cyber-pulse or aurora light leaks, cyberpunk-hacker text style, cyber-scanner borders.
+- MINIMALIST EDITORIAL: Clean paced scenes, slide-slow or pan image animations, radial-blur or vignette effects, dust-particles overlay, aurora or gold-glow light leaks, editorial-minimal text style with typewriter or slide-left text animation, thin-line borders.
 
-You must output a JSON object containing:
-1. "code": The complete TSX code for the VideoComposition component as a single string.
-2. "durationInFrames": The total duration of your composition in frames (30 frames = 1 second).
-
-GUIDELINES FOR THE GENERATED REACT TSX CODE:
-- EXPORTS: You MUST export the component: 'export const VideoComposition: React.FC = () => { ... }' or 'export function VideoComposition() { ... }'.
-- IMPORTS: You can ONLY import from 'remotion', 'react', and google fonts submodules of '@remotion/google-fonts' (e.g. 'import { loadFont } from "@remotion/google-fonts/PlayfairDisplay";' or 'import { loadFont as loadMontserrat } from "@remotion/google-fonts/Montserrat";'). Do not import any stylesheets (.css), custom components, or other external packages.
-- FONTS: Load Google Fonts outside the component using 'loadFont(...)'. Reference the resulting 'fontFamily' in your inline styles.
-- IMAGES: You MUST hardcode the provided image URLs (e.g., '<Img src="https://..." />') directly inside your React code where appropriate. Give them proper styling (objectFit: 'contain' or 'cover', borderRadius, shadow).
-- EFFECTS: Implement high-fidelity effects matching the prompt theme (Phonk edit, Retro aesthetic, Luxury showcase, etc.).
-  - Phonk/Glitch edits: Include rapid Sequence cuts (e.g., 10-20 frames per image), beat-pump zoom springs, translation camera shakes (using math-based offsets or spring-loaded values), neon police-flashes, chromatic text offsets, and audio equalizer visualizers.
-  - Luxury showcases: Include slow Ken Burns panning/zooms, heavy vignette gradients, letterbox overlays, floating gold foil flakes or sparkles using React mathematical animations, and gold metallic gradient text styling.
-- AUDIO: Do not add any <Audio> tags or imports. Audio is handled globally.
-- STYLE: Use inline styles for all components. Do not use external CSS class selectors. Keep all layouts clean, premium, and responsive.`,
+RULES:
+1. TEXT OVERLAY RULE: Only add text overlay captions if the user explicitly requests/mentions text, headings, titles, or words in their prompt. If not mentioned, set 'textOverlay' to an empty string ("") for all scenes.
+2. DYNAMIC COLORS: Set visualTheme colors (backgroundGradientStart/End) to match the colors of the uploaded images.
+3. FLOW & TRANSITIONS: Vary scene durations and effects to create rhythm and prevent boring static loops.`,
             responseMimeType: 'application/json',
             responseSchema: storyboardSchema,
           }
         });
 
-        const responseText = response.text;
-        if (!responseText) {
+        const storyboardText = response.text;
+        if (!storyboardText) {
           throw new Error("Empty response from Gemini API");
         }
 
-        storyboard = JSON.parse(responseText);
+        storyboard = JSON.parse(storyboardText);
 
-        // Run syntax checks on the code string
-        console.log(`Checking syntax of generated code (Attempt ${attempts + 1})...`);
-        const compileCheck = checkTypeScriptCompile(storyboard.code);
+        // Run validation check
+        validateStoryboard(storyboard);
 
-        if (!compileCheck.success) {
-          throw new Error(`TypeScript compilation check failed:\n${compileCheck.error}`);
+        // Map image URLs
+        if (storyboard.scenes) {
+          storyboard.scenes = storyboard.scenes.map((scene: any) => {
+            if (scene.imageIdx >= 0 && imageUrls && imageUrls[scene.imageIdx]) {
+              return {
+                ...scene,
+                imageUrl: imageUrls[scene.imageIdx]
+              };
+            }
+            return { ...scene, imageUrl: null };
+          });
         }
 
-        console.log("React code compiled successfully!");
-        break; // break loop on success
-
+        console.log("Gemini JSON successfully validated!");
+        break; // break the loop if successful!
       } catch (err: any) {
         attempts++;
-        console.warn(`Attempt ${attempts}/${maxAttempts} failed:`, err.message);
+        console.warn(`Storyboard validation failed (attempt ${attempts}/${maxAttempts}):`, err.message);
         if (attempts >= maxAttempts) {
-          throw new Error(`Failed to generate valid React code after ${maxAttempts} attempts. Error: ${err.message}`);
+          throw new Error(`Failed to generate a valid storyboard after ${maxAttempts} attempts: ${err.message}`);
         }
-
-        // Feed the compile error back to Gemini for self-correction
+        
         contents.push({ 
           role: 'model', 
           parts: [{ text: JSON.stringify(storyboard || { error: err.message }) }] 
         });
         contents.push({ 
           role: 'user', 
-          parts: [{ text: `The code you generated failed compilation with the following error:\n"${err.message}"\n\nPlease rewrite the complete VideoComposition code to correct this compile error. Remember to keep the exports, use only allowed imports, and output it in the correct JSON structure.` }] 
+          parts: [{ text: `The previous response failed validation with the following error: "${err.message}". Please regenerate the storyboard, correcting this error. Keep the response strictly conforming to the JSON schema and requirements.` }] 
         });
       }
     }
@@ -216,8 +262,7 @@ GUIDELINES FOR THE GENERATED REACT TSX CODE:
         event_type: 'render-video',
         client_payload: {
           generationId,
-          code: storyboard.code,
-          durationInFrames: storyboard.durationInFrames
+          storyboard
         }
       })
     });
