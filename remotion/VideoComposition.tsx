@@ -779,17 +779,40 @@ const FilmBurnLeak: React.FC = () => {
   );
 };
 
-// Lens Flare overlay
+// Lens Flare overlay (Anamorphic sweep)
 const LensFlare: React.FC = () => {
   const frame = useCurrentFrame();
-  const fx = 30 + Math.sin(frame * 0.03) * 15;
-  const fy = 25 + Math.cos(frame * 0.02) * 10;
+  const { height } = useVideoConfig();
+  const cycle = 150;
+  const t = (frame % cycle) / cycle;
+  const y = interpolate(t, [0, 1], [-150, height + 150]);
+  const opacity = Math.sin(t * Math.PI) * 0.4;
+
   return (
     <div style={{
-      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 11,
-      background: `radial-gradient(circle at ${fx}% ${fy}%, rgba(255, 255, 255, 0.8) 0%, rgba(253, 224, 71, 0.4) 8%, rgba(239, 68, 68, 0.15) 25%, transparent 60%)`,
-      mixBlendMode: 'screen',
-    }} />
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: y,
+      height: 100,
+      transform: "translateY(-50%)",
+      background: "radial-gradient(ellipse at center, rgba(232, 201, 125, 0.22) 0%, rgba(232, 201, 125, 0.04) 20%, transparent 65%)",
+      mixBlendMode: "screen",
+      pointerEvents: "none",
+      zIndex: 14,
+      opacity: Math.max(0, opacity),
+    }}>
+      <div style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: "50%",
+        height: 2,
+        transform: "translateY(-50%)",
+        background: "linear-gradient(to right, transparent, rgba(255, 215, 0, 0.45), rgba(255, 255, 255, 0.8), rgba(255, 215, 0, 0.45), transparent)",
+        boxShadow: "0 0 12px rgba(255, 215, 0, 0.6)",
+      }} />
+    </div>
   );
 };
 
@@ -1033,12 +1056,8 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
   } else if (layout === 'full-width-centered') {
     frameStyle = {
       position: 'absolute',
-      top: '50%',
-      left: 0, right: 0,
-      transform: 'translateY(-50%)',
-      height: '62%',
+      inset: 0,
       zIndex: 4,
-      overflow: 'hidden',
     };
   } else {
     // Default framed layout
