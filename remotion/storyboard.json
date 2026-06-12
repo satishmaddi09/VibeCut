@@ -1,0 +1,36 @@
+{
+  "storyboard": {
+    "visualTheme": {
+      "backgroundGradientStart": "#8b5cf6",
+      "backgroundGradientEnd": "#ec4899",
+      "textColor": "#ffffff",
+      "fontFamily": "Plus Jakarta Sans"
+    },
+    "scenes": [
+      {
+        "id": 1,
+        "durationInFrames": 90,
+        "imageIdx": -1,
+        "textOverlay": "VibeCut 🎬 AI Video",
+        "textAnimation": "slide-up",
+        "imageAnimation": "none"
+      },
+      {
+        "id": 2,
+        "durationInFrames": 90,
+        "imageIdx": -1,
+        "textOverlay": "Stitched instantly in the cloud",
+        "textAnimation": "zoom-in",
+        "imageAnimation": "none"
+      },
+      {
+        "id": 3,
+        "durationInFrames": 90,
+        "imageIdx": -1,
+        "textOverlay": "All for $0.00!",
+        "textAnimation": "fade",
+        "imageAnimation": "none"
+      }
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+name: Render Video
+
+on:
+  repository_dispatch:
+    types: [render-video]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install System Dependencies (Linux)
+        # Install system dependencies required for Headless Chrome on Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgbm-dev
+
+      - name: Install NPM Dependencies
+        run: npm ci || npm install
+
+      - name: Write Storyboard JSON
+        # Save the storyboard configuration payload to a local file
+        run: |
+          echo '${{ toJson(github.event.client_payload.storyboard) }}' > remotion/storyboard.json
+          echo "Storyboard written successfully:"
+          cat remotion/storyboard.json
+
+      - name: Ensure Chromium Browser is Installed
+        run: npx remotion browser ensure
+
+      - name: Render Video with Remotion
+        run: |
+          npx remotion render remotion/index.ts VideoComposition out/video.mp4 --props=remotion/storyboard.json
+
+      - name: Upload Video to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GENERATION_ID: ${{ github.event.client_payload.generationId }}
+          FILE_PATH: out/video.mp4
+        run: node scripts/upload-to-supabase.js
