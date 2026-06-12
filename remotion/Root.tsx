@@ -4,7 +4,7 @@ import { VideoComposition, defaultStoryboard } from './VideoComposition';
 export const RemotionRoot: React.FC = () => {
   // Retrieve properties passed via CLI or defaults
   const props = getInputProps() as any;
-  const storyboard = props?.storyboard || defaultStoryboard;
+  const storyboard = props?.scenes ? props : (props?.storyboard || defaultStoryboard);
   
   // Calculate total duration by adding up all scene frame counts
   const totalDuration = storyboard.scenes.reduce(
