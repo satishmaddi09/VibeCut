@@ -6,8 +6,12 @@ const token = process.env.UPLOADTHING_TOKEN;
 const generationId = process.env.GENERATION_ID;
 const filePath = process.env.FILE_PATH || 'out/video.mp4';
 
-if (!token || !generationId) {
-  console.error("Error: Missing required environment variables: UPLOADTHING_TOKEN, GENERATION_ID.");
+if (!token) {
+  console.error("Error: Missing UPLOADTHING_TOKEN environment variable. Please make sure UPLOADTHING_TOKEN is set in your GitHub Repository Secrets.");
+  process.exit(1);
+}
+if (!generationId) {
+  console.error("Error: Missing GENERATION_ID environment variable.");
   process.exit(1);
 }
 
