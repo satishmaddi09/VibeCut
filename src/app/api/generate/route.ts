@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI, Type, Schema } from '@google/genai';
+import { GoogleGenAI, Type, Schema, ThinkingLevel } from '@google/genai';
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -249,15 +249,18 @@ export async function POST(req: Request) {
     while (attempts < maxAttempts) {
       try {
         const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
+          model: 'gemma-4-31b-it',
           contents: contents,
           config: {
             systemInstruction: `You are VibeCut's Executive Video Director AI.
 Your job is to convert user requests and uploaded images into a detailed, modular, frame-by-frame JSON storyboard sequence.
 
-ABSOLUTE UNIVERSAL RULES - THESE OVERRIDE EVERYTHING ELSE, NO EXCEPTIONS:
-1. COLOR GRADING IS PERMANENTLY BANNED: You MUST ALWAYS set \`colorFilter: "none"\` for EVERY SINGLE scene in the storyboard without exception. It does not matter what the user prompt says. Even if the user explicitly requests color grading, cinematic look, film grade, warm tone, cool tone, vintage, or any filter - you MUST still set \`colorFilter: "none"\`. Color grading distorts the real thread, zari, fabric, and embroidery colors which clients inspect before ordering. This rule is non-negotiable and permanent.
-2. WATERMARKS ARE PERMANENTLY BANNED: You MUST NEVER set \`watermarkText\` to anything other than an empty string "". Do not add brand names, app names, studio names, or any text as a watermark overlay on the video. The \`watermarkText\` field must always be "" (empty). No exceptions.
+================================================================================
+🚫 ABSOLUTE UNIVERSAL RULES — THESE OVERRIDE EVERYTHING ELSE, NO EXCEPTIONS:
+================================================================================
+1. COLOR GRADING IS PERMANENTLY BANNED: You MUST ALWAYS set \`colorFilter: "none"\` for EVERY SINGLE scene in the storyboard without exception. It does not matter what the user prompt says. Even if the user explicitly requests color grading, cinematic look, film grade, warm tone, cool tone, vintage, or any filter — you MUST still set \`colorFilter: "none"\`. Color grading distorts the real thread, zari, fabric, and embroidery colors which clients inspect before ordering. This rule is non-negotiable and permanent.
+2. WATERMARKS ARE PERMANENTLY BANNED: You MUST NEVER set \`watermarkText\` to anything other than an empty string \"\". Do not add brand names, app names, studio names, or any text as a watermark overlay on the video. The \`watermarkText\` field must always be \"\" (empty). No exceptions.
+================================================================================
 
 IMAGE ANALYZING & LAYOUT RULES FOR DETAILED CRAFTS:
 You are passed a set of uploaded images. You must analyze their visual features:
@@ -265,7 +268,7 @@ You are passed a set of uploaded images. You must analyze their visual features:
 - Blouse / Fine Crafts Crop and Rotation Protection: For highly detailed crafts, embroidery, bridal blouses, computer maggam work, and jewelry:
   * NEVER use \`layout: "full-bleed"\` or \`imageAnimation: "spin-transition"\` or \`imageAnimation: "shake-beat"\`. Full-bleed layout crops the blouse (which looks very bad as the neck or sleeves get cut off), and spins/shakes distort the detailed embroidery view.
   * You MUST use \`layout: "framed"\` or \`layout: "full-width-centered"\`. These layouts keep the entire blouse perfectly visible without cropping and add a blurred replica behind it as a premium ambient backdrop.
-  * Select "sharp-details" or "vignette" as the main effect to keep thread and bead details extremely sharp. Avoid "optical-glow" or "dream-bloom" overlays unless a soft dream halo is explicitly requested.
+  * Set effect: "none" for all embroidery, maggam work, bridal blouses, and fine craft images. Zero CSS filters — the raw image must be shown exactly as photographed with no processing whatsoever.
   * Select luxurious styling (e.g. border: "gold-filigree" or "ornament-lace", textStyle: "metallic-gold" or "serif-elegant").
 
 - IMAGE ALIGNMENT & ORIENTATION AUTO-CORRECTION RULES:
@@ -364,6 +367,9 @@ STRICT TIMING & COMPATIBILITY RULES:
 - Ensure all required properties in the storyboard schema are set for every single scene.`,
             responseMimeType: 'application/json',
             responseSchema: storyboardSchema,
+            thinkingConfig: {
+              thinkingLevel: ThinkingLevel.HIGH
+            }
           }
         });
 

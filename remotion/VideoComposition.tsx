@@ -2633,7 +2633,8 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
   } else if (scene.effect === 'dream-bloom') {
     imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.05) contrast(1.03) saturate(1.05)`;
   } else if (scene.effect === 'sharp-details') {
-    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}contrast(1.15) saturate(1.15) brightness(1.02)`;
+    // sharp-details: no color filter applied — preserves original image colors exactly
+    imageFilter = imageFilter === 'none' ? 'none' : imageFilter;
   } else if (scene.effect === 'shake-flash-beat') {
     const beat = spring({
       frame: frame % 15,
