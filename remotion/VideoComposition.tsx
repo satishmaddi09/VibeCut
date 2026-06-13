@@ -92,7 +92,7 @@ export const defaultStoryboard: Storyboard = {
     backgroundGradientEnd: '#000000',
     textColor: '#ffffff',
     fontFamily: 'Montserrat',
-    watermarkText: 'VIBECUT EDITS',
+    watermarkText: '',
   },
   scenes: [
     {
@@ -3101,7 +3101,7 @@ export const VideoComposition: React.FC<{ storyboard?: Storyboard }> = ({ storyb
           ========================================== */}
       <FilmGrain />
       <ThreadProgressBar />
-      {theme.watermarkText && <WatermarkOverlay text={theme.watermarkText} />}
+      {/* Watermark permanently disabled */}
       
       {/* Dynamic equalizer when Phonk features are actively requested */}
       {storyboard.scenes.some(s => s.imageAnimation === 'shake-beat' || s.imageAnimation === 'zoom-fast-beat') && (
