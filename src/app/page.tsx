@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { uploadFiles } from '@/utils/uploadthing';
 import { 
   Sparkles, 
   Film, 
@@ -97,6 +98,8 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -199,35 +202,23 @@ export default function Home() {
       const bucketName = 'video-generator';
       const uploadedUrls: string[] = [];
 
-      // 2. Upload images to Supabase storage
+      // 2. Upload images to UploadThing
       if (images.length > 0) {
         for (let i = 0; i < images.length; i++) {
           const imageObj = images[i];
-          const fileExtension = imageObj.file.name.split('.').pop();
-          const fileName = `${i}_file.${fileExtension}`;
-          const filePath = `generations/${genId}/inputs/${fileName}`;
-
-          const { data, error } = await supabase.storage
-            .from(bucketName)
-            .upload(filePath, imageObj.file, {
-              cacheControl: '3600',
-              upsert: true
+          console.log(`Uploading file ${imageObj.file.name} to UploadThing...`);
+          try {
+            const uploadRes = await uploadFiles('imageUploader', {
+              files: [imageObj.file],
+              customId: `${genId}-image-${i}`,
             });
-
-          if (error) {
-            throw new Error(`Failed to upload file ${imageObj.file.name}: ${error.message}`);
+            if (!uploadRes || uploadRes.length === 0) {
+              throw new Error("No response received from UploadThing");
+            }
+            uploadedUrls.push(uploadRes[0].url);
+          } catch (err: any) {
+            throw new Error(`Failed to upload file ${imageObj.file.name}: ${err.message || err}`);
           }
-
-          // Retrieve public url
-          const { data: urlData } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(filePath);
-
-          if (!urlData || !urlData.publicUrl) {
-            throw new Error(`Failed to get public URL for ${imageObj.file.name}`);
-          }
-
-          uploadedUrls.push(urlData.publicUrl);
         }
       }
 
@@ -256,7 +247,7 @@ export default function Home() {
       if (genData.dispatched) {
         setStatus('rendering');
         setProgressStep(3);
-        startPollingForVideo(genId, bucketName);
+        startPollingForVideo(genId);
       } else {
         // Mock / Development warning if secrets are not yet added
         setStatus('completed');
@@ -274,11 +265,10 @@ export default function Home() {
     }
   };
 
-  // Poll Supabase Storage to check when the video compile completes
-  const startPollingForVideo = (genId: string, bucketName: string) => {
-    const videoPath = `generations/${genId}/output.mp4`;
-    const { data } = supabase.storage.from(bucketName).getPublicUrl(videoPath);
-    const publicVideoUrl = data.publicUrl;
+  // Poll UploadThing CDN to check when the video compile completes
+  const startPollingForVideo = (genId: string) => {
+    const appId = process.env.NEXT_PUBLIC_UPLOADTHING_APP_ID || 'zcsozj16te';
+    const publicVideoUrl = `https://utfs.io/a/${appId}/${genId}-video`;
 
     let attempts = 0;
     const maxAttempts = 72; // ~6 minutes maximum (72 * 5 seconds)
@@ -288,7 +278,7 @@ export default function Home() {
       setProgressStep(4); // actively compiling
 
       try {
-        // Make a HEAD request to verify if file exists in Supabase bucket
+        // Make a HEAD request to verify if file exists in UploadThing CDN
         const res = await fetch(publicVideoUrl, { method: 'HEAD' });
         
         if (res.ok) {
@@ -309,6 +299,44 @@ export default function Home() {
         setErrorMessage("Rendering timed out. Please check your GitHub Actions workflow logs.");
       }
     }, 5000); // Poll every 5 seconds
+  };
+
+  const handleDownload = async () => {
+    if (!videoUrl || !generationId) return;
+    setIsDownloading(true);
+    try {
+      const response = await fetch(videoUrl);
+      if (!response.ok) throw new Error("Failed to fetch video file from CDN");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vibecut-${generationId}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      console.log(`Video downloaded. Requesting deletion of generation: ${generationId}`);
+      
+      // Call the deletion API immediately to clean up all files from UploadThing
+      await fetch(`/api/delete-generation?generationId=${generationId}`, { method: 'POST' });
+      
+      // Reset state so they don't try to download it again (it's gone!)
+      setVideoUrl(null);
+      setStoryboard(null);
+      setImages([]);
+      setGenerationId(null);
+      setStatus('idle');
+      setProgressStep(0);
+      alert("🎉 Download completed successfully! For your privacy, your files have been permanently deleted from our servers.");
+    } catch (err: any) {
+      console.error("Error during download/cleanup:", err);
+      alert("Failed to download or clean up files: " + (err.message || err));
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -501,10 +529,24 @@ export default function Home() {
               </div>
               
               <div className={styles.downloadRow}>
-                <a href={videoUrl} download={`vibecut-${generationId}.mp4`} className={styles.downloadBtn}>
-                  <Download size={18} />
-                  Download MP4 File
-                </a>
+                <button 
+                  onClick={handleDownload} 
+                  disabled={isDownloading} 
+                  className={styles.downloadBtn}
+                  style={{ cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className={styles.spinner} size={18} />
+                      Downloading & Wiping Files...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={18} />
+                      Download & Delete from Server
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
