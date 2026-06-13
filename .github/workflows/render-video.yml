@@ -40,14 +40,14 @@ jobs:
 
       - name: Render Video with Remotion
         run: |
-          npx remotion render remotion/index.ts VideoComposition out/video.mp4 --props=remotion/storyboard.json --jpeg-quality=80
+          npx remotion render remotion/index.ts VideoComposition out/video.mp4 --props=remotion/storyboard.json --jpeg-quality=100
 
       - name: Compress Video with FFmpeg
         run: |
           echo "Original size: $(du -sh out/video.mp4 | cut -f1)"
           ffmpeg -i out/video.mp4 \
             -vcodec libx264 \
-            -crf 18 \
+            -crf 10 \
             -preset medium \
             -acodec aac \
             -b:a 128k \

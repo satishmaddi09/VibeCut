@@ -3100,7 +3100,7 @@ export const VideoComposition: React.FC<{ storyboard?: Storyboard }> = ({ storyb
           2. PERSISTENT GLOBAL SYSTEM LAYERS
           ========================================== */}
       <FilmGrain />
-      <ThreadProgressBar />
+      {/* ThreadProgressBar permanently disabled */}
       {/* Watermark permanently disabled */}
       
       {/* Dynamic equalizer when Phonk features are actively requested */}
