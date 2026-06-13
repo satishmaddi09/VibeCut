@@ -42,6 +42,22 @@ jobs:
         run: |
           npx remotion render remotion/index.ts VideoComposition out/video.mp4 --props=remotion/storyboard.json
 
+      - name: Compress Video with FFmpeg
+        run: |
+          echo "Original size: $(du -sh out/video.mp4 | cut -f1)"
+          ffmpeg -i out/video.mp4 \
+            -vcodec libx264 \
+            -crf 28 \
+            -preset fast \
+            -maxrate 2M \
+            -bufsize 4M \
+            -acodec aac \
+            -b:a 128k \
+            -movflags +faststart \
+            out/video_compressed.mp4
+          echo "Compressed size: $(du -sh out/video_compressed.mp4 | cut -f1)"
+          mv out/video_compressed.mp4 out/video.mp4
+
       - name: Upload Video to Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
