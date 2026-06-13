@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI, Type, Schema, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI, Type, Schema } from '@google/genai';
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -249,7 +249,7 @@ export async function POST(req: Request) {
     while (attempts < maxAttempts) {
       try {
         const response = await ai.models.generateContent({
-          model: 'gemma-4-31b-it',
+          model: 'gemini-2.0-flash',
           contents: contents,
           config: {
             systemInstruction: `You are VibeCut's Executive Video Director AI.
@@ -364,9 +364,6 @@ STRICT TIMING & COMPATIBILITY RULES:
 - Ensure all required properties in the storyboard schema are set for every single scene.`,
             responseMimeType: 'application/json',
             responseSchema: storyboardSchema,
-            thinkingConfig: {
-              thinkingLevel: ThinkingLevel.HIGH
-            }
           }
         });
 
