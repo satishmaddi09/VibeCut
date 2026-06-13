@@ -1717,40 +1717,14 @@ const OutroSlide: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ scene,
     buttonIcon = null;
   }
 
-  const placement = getSceneImagePlacement(scene, 0);
-
-  const bgImageLeft = scene.imageUrl || (scene.imageUrls && scene.imageUrls[0]) || null;
-  const bgImageRight = (scene.imageUrls && scene.imageUrls[1]) || bgImageLeft;
-
   return (
     <AbsoluteFill style={{ background: "#000805", overflow: "hidden" }}>
-      {bgImageLeft ? (
-        <div style={{ position: "absolute", inset: -20, display: "flex", zIndex: 1 }}>
-          <div style={{ flex: 1, height: "100%", overflow: "hidden", filter: "blur(28px) brightness(0.18) saturate(1.2)" }}>
-            <Img src={bgImageLeft} style={{ 
-              width: "100%", height: "100%", 
-              objectFit: "cover",
-              objectPosition: placement.position,
-              transform: `rotate(${placement.rotation}deg) scale(${placement.zoom})`
-            }} />
-          </div>
-          <div style={{ width: 3, height: "100%", background: accentColor, opacity: 0.25 }} />
-          <div style={{ flex: 1, height: "100%", overflow: "hidden", filter: "blur(28px) brightness(0.18) saturate(1.2)" }}>
-            <Img src={bgImageRight || ''} style={{ 
-              width: "100%", height: "100%", 
-              objectFit: "cover",
-              objectPosition: placement.position,
-              transform: `rotate(${placement.rotation}deg) scale(${placement.zoom})`
-            }} />
-          </div>
-        </div>
-      ) : (
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: `linear-gradient(135deg, ${theme.backgroundGradientStart}, ${theme.backgroundGradientEnd})`,
-          zIndex: 1
-        }} />
-      )}
+      {/* Plain dark background */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: `linear-gradient(160deg, ${theme.backgroundGradientStart} 0%, #000000 60%, ${theme.backgroundGradientEnd} 100%)`,
+        zIndex: 1
+      }} />
 
       <div style={{
         position: "absolute", inset: 0, zIndex: 2,
