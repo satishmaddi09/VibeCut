@@ -210,7 +210,7 @@ export default function Home() {
           try {
             const uploadRes = await uploadFiles('imageUploader', {
               files: [imageObj.file],
-              customId: `${genId}-image-${i}`,
+              input: { customId: `${genId}-image-${i}` }
             });
             if (!uploadRes || uploadRes.length === 0) {
               throw new Error("No response received from UploadThing");
