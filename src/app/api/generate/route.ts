@@ -249,7 +249,7 @@ export async function POST(req: Request) {
     while (attempts < maxAttempts) {
       try {
         const response = await ai.models.generateContent({
-          model: 'gemma-4-31b-it',
+          model: 'gemma-4-26b-a4b-it',
           contents: contents,
           config: {
             systemInstruction: `You are VibeCut's Executive Video Director AI.
