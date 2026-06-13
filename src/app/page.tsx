@@ -11,7 +11,15 @@ import {
   Trash2, 
   Heart, 
   Download, 
-  Loader2 
+  Loader2,
+  Layers,
+  Settings,
+  Play,
+  FileText,
+  ChevronRight,
+  RefreshCw,
+  Music,
+  Check
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -21,15 +29,74 @@ interface UploadedImage {
   uploadedUrl?: string;
 }
 
+const TEMPLATES = [
+  {
+    id: 'gold-luxury',
+    name: '✨ Royal Gold Filigree',
+    description: 'Perfect for bridal blouses, computer maggam, and jewelry. Features gold filigree, sparkles, and emerald luxury correction.',
+    prompt: 'A premium showcase for computer maggam work designs, heavy gold zardozi embroidery with diamond details, gold filigree border, royal emerald background, slow transitions, sparkling gold dust particles.',
+  },
+  {
+    id: 'phonk-beat',
+    name: '⚡ Cyber Phonk Beat Drop',
+    description: 'High energy, fast beat edit with neon borders, chromatic flashes, police light leaks, and kinetic spring titles.',
+    prompt: 'Fast paced Phonk edit, dark urban themes, high contrast neon cyan and magenta pulsing border, glitch text effects, chromatic aberration sweeps, rapid zoom-fast-beat transitions on beat drops.',
+  },
+  {
+    id: 'retro-vhs',
+    name: '📼 Analog VHS Camcorder',
+    description: 'Nostalgic 90s look with VHS tracking line distortion, viewfinder borders, warm light leaks, and dust particles.',
+    prompt: 'Retro VHS recording style video, vintage warm coloring, scanline distortion tracking effects, play time counter in courier font, warm light leaks with analog film dust particles.',
+  },
+  {
+    id: 'floral-minimal',
+    name: '🌸 Minimalist Editorial',
+    description: 'Elegant slide-slow showcase with thin lines, dreamy haze light leak, and falling red/pink rose petals.',
+    prompt: 'A clean editorial minimal style portfolio, thin line borders, soft dreamy pastel backglow haze, floating red rose petals, slide-slow transitions with elegant Playfair serif text overlays.',
+  },
+  {
+    id: 'theater-showcase',
+    name: '🎭 Theater Curtain Stage',
+    description: 'Perfect for vlog intros. Renders parting velvet curtains, sweeping spotlights, and before-after comparisons.',
+    prompt: 'A dramatic vlog intro, theater-curtains border opening at the start and closing at the end, stage-spotlight sweeping across a split-comparison layout comparing design stages, rich dark mahogany color theme.',
+  },
+  {
+    id: 'motion-graphics',
+    name: '💥 Kinetic Motion Graphic',
+    description: 'Modern content style with lower-thirds, shape bursts, kinetic reveals, and bokeh particle overlays.',
+    prompt: 'Premium modern motion graphics edit, border: kinetic-reveal transition bars, gold and velvet color blocks, shape-bursts gold expanding rings, bokeh-particles drifting in the background, lower-third info banner sliding in from left.',
+  },
+  {
+    id: 'cyber-hud',
+    name: '📟 Cyberpunk HUD Scanner',
+    description: 'Tech scanner display with target crosshairs, neon cyan coordinates, scanlines, and prism splits.',
+    prompt: 'Tech reviews layout, cyber-hud scanning overlay with glowing neon cyan coordinates and crosshairs, prism-split refractive edge clones, digital rain, cyberpunk Hacker typewriter text.',
+  },
+  {
+    id: 'vintage-projector',
+    name: '🎞️ 8mm Projector Memories',
+    description: 'Nostalgic projector feel with film dust, scratches, warm drifting bokeh lights, and vintage borders.',
+    prompt: 'Vintage home video memories, film-dust-scratches projector hair particles and scratches flickering, warm light-leak-warm leaks, bokeh-particles drifting, vintage-warm grading, vhs-borders.',
+  },
+  {
+    id: 'grid-spec',
+    name: '📊 Multi-Image Grid Showcase',
+    description: 'Display 4 or 6 items simultaneously in a premium card grid with staggered zoom animations.',
+    prompt: 'A premium catalog showcase displaying a grid of 6 different computer embroidery designs at once in a grid-6 layout, gold-filigree borders, sparkles particle overlay, bold-clean metallic-gold headers.'
+  }
+];
+
 export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [storyboard, setStoryboard] = useState<any | null>(null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'storyboarding' | 'rendering' | 'completed' | 'failed'>('idle');
   const [progressStep, setProgressStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -183,6 +250,8 @@ export default function Home() {
         throw new Error(genData.error || 'Failed to generate storyboard');
       }
 
+      setStoryboard(genData.storyboard);
+
       // Check if action was successfully dispatched
       if (genData.dispatched) {
         setStatus('rendering');
@@ -246,217 +315,255 @@ export default function Home() {
     <main className={styles.container}>
       <header className={styles.header}>
         <div className={styles.logoContainer}>
-          <Film size={40} className={styles.logoIcon} />
-          <h1 className={styles.title}>VibeCut</h1>
+          <Film size={44} className={styles.logoIcon} />
+          <h1 className={styles.title}>VibeCut <span className={styles.titleBadge}>SaaS Pro</span></h1>
         </div>
-        <p className={styles.subtitle}>Supercharge your ideas into engaging visual stories</p>
+        <p className={styles.subtitle}>Supercharge your Maggam work, boutiques, & ideas into premium vertical reels</p>
       </header>
 
-      {/* Safety Guardrail Notice */}
-      <div className={styles.guardrailCard}>
-        <Sparkles size={24} className={styles.guardrailIcon} />
-        <div className={styles.guardrailText}>
-          <strong>🫧 Zero-Waste Ephemeral Pipeline</strong>
-          To avoid cloud fees and respect your data privacy, your uploaded photos and generated video are cached on our secure servers temporarily. Leaving, refreshing, or closing this tab will trigger a complete wipe of your files instantly!
+      {/* Interactive Templates Presets */}
+      <section className={styles.templatesSection}>
+        <div className={styles.templatesHeader}>
+          <Sparkles size={18} className={styles.templatesHeaderIcon} />
+          <h2>Select a Production Video Template</h2>
         </div>
-      </div>
-
-      <div className={styles.card}>
-        <form onSubmit={handleGenerate}>
-          {/* Visual/Text Prompt */}
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="prompt">
-              Describe your video <span className={styles.labelHint}>(theme, pace, mood)</span>
-            </label>
-            <textarea
-              id="prompt"
-              className={styles.textarea}
-              placeholder="e.g. A fast-paced, high-tech journey through a cyber-city, transition with zooming effects, colorful neon signs..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+        <div className={styles.templatesGrid}>
+          {TEMPLATES.map((tmpl) => (
+            <button
+              key={tmpl.id}
+              type="button"
+              className={`${styles.templateCard} ${selectedTemplateId === tmpl.id ? styles.templateCardActive : ''}`}
+              onClick={() => {
+                setSelectedTemplateId(tmpl.id);
+                setPrompt(tmpl.prompt);
+              }}
               disabled={status !== 'idle' && status !== 'completed' && status !== 'failed'}
-              required
-            />
-          </div>
-
-          {/* Media Uploader */}
-          <div className={styles.formGroup}>
-            <span className={styles.label}>
-              Upload photos <span className={styles.labelHint}>(Gemini will arrange them)</span>
-            </span>
-
-            <div
-              className={`${styles.uploadArea} ${isDragActive ? styles.uploadAreaActive : ''}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
             >
-              <UploadCloud size={32} className={styles.uploadIcon} />
-              <p className={styles.uploadText}>
-                Drag & drop photos here, or <strong>browse files</strong>
-              </p>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                style={{ display: 'none' }}
-                accept="image/*"
-                multiple
-                onChange={handleFileChange}
+              <div className={styles.templateCardHeader}>
+                <span className={styles.templateName}>{tmpl.name}</span>
+                {selectedTemplateId === tmpl.id && <span className={styles.activeCheck}><Check size={14} /> Active</span>}
+              </div>
+              <p className={styles.templateDescription}>{tmpl.description}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Two-Column Workspace */}
+      <div className={styles.workspace}>
+        {/* Left Column: Creator Console */}
+        <section className={styles.consoleColumn}>
+          <div className={styles.cardHeader}>
+            <Settings size={18} className={styles.headerIcon} />
+            <h2>Video Creator Console</h2>
+          </div>
+          
+          <form onSubmit={handleGenerate} className={styles.form}>
+            {/* Visual/Text Prompt */}
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="prompt">
+                Edit Video Prompt <span className={styles.labelHint}>(Customize theme, timing or overlays)</span>
+              </label>
+              <textarea
+                id="prompt"
+                className={styles.textarea}
+                placeholder="Choose a template above or type your customized video guidelines..."
+                value={prompt}
+                onChange={(e) => {
+                  setPrompt(e.target.value);
+                  setSelectedTemplateId(null); // clear preset tag if modified manually
+                }}
                 disabled={status !== 'idle' && status !== 'completed' && status !== 'failed'}
+                required
               />
             </div>
 
-            {/* Selected Images Grid */}
-            {images.length > 0 && (
-              <div className={styles.thumbnailGrid}>
-                {images.map((img, idx) => (
-                  <div key={idx} className={styles.thumbnailWrapper}>
-                    <img src={img.previewUrl} alt="Thumbnail preview" className={styles.thumbnail} />
-                    <button
-                      type="button"
-                      className={styles.removeThumbBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeImage(idx);
-                      }}
-                      disabled={status !== 'idle' && status !== 'completed' && status !== 'failed'}
-                    >
-                      <Trash2 size={10} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Submit Action */}
-          <button
-            type="submit"
-            className={styles.submitBtn}
-            disabled={!prompt.trim() || (status !== 'idle' && status !== 'completed' && status !== 'failed')}
-          >
-            {status !== 'idle' && status !== 'completed' && status !== 'failed' ? (
-              <>
-                <Loader2 className={styles.spinner} size={20} />
-                Creating Magic...
-              </>
-            ) : (
-              <>
-                <Sparkles size={20} />
-                Generate AI Video ✨
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Mascot bubble during active pipeline */}
-        {status !== 'idle' && status !== 'completed' && status !== 'failed' && (
-          <div className={`${styles.mascotContainer} animate-float`}>
-            <div className={styles.mascotAvatar}>🤖💖</div>
-            <div className={styles.mascotText}>
-              {status === 'uploading' && "Uploading your beautiful pictures to our vault..."}
-              {status === 'storyboarding' && "Gemini is analyzing your prompt and storyboard... We are designing layouts!"}
-              {status === 'rendering' && "Remote builder is running on GitHub. Compiling and stitching the video frame-by-frame. This usually takes 2-3 mins, stay on this page! 🍿"}
-            </div>
-          </div>
-        )}
-
-        {/* Error Output */}
-        {errorMessage && (
-          <div className={styles.errorMessage}>
-            <div className="flex items-center gap-2 mb-1 font-semibold">
-              <AlertCircle size={18} />
-              <span>Pipeline Notice</span>
-            </div>
-            <p>{errorMessage}</p>
-          </div>
-        )}
-
-        {/* Real-time Step Tracker */}
-        {status !== 'idle' && (
-          <div className={styles.trackerContainer}>
-            <h3 className={styles.trackerTitle}>
-              <Film size={18} /> Video Construction Progress
-            </h3>
-            <div className={styles.stepsList}>
-              <div
-                className={`${styles.stepItem} ${
-                  progressStep > 1
-                    ? styles.stepCompleted
-                    : progressStep === 1
-                    ? styles.stepActive
-                    : styles.stepPending
-                }`}
-              >
-                {progressStep > 1 ? <CheckCircle2 size={16} /> : <div className={styles.spinner} />}
-                <span>1. Safely uploading asset images to temporary storage</span>
-              </div>
+            {/* Media Uploader */}
+            <div className={styles.formGroup}>
+              <span className={styles.label}>
+                Upload Photos <span className={styles.labelHint}>(Gemma will organize storyboard index)</span>
+              </span>
 
               <div
-                className={`${styles.stepItem} ${
-                  progressStep > 2
-                    ? styles.stepCompleted
-                    : progressStep === 2
-                    ? styles.stepActive
-                    : styles.stepPending
-                }`}
+                className={`${styles.uploadArea} ${isDragActive ? styles.uploadAreaActive : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
               >
-                {progressStep > 2 ? <CheckCircle2 size={16} /> : progressStep === 2 ? <div className={styles.spinner} /> : null}
-                <span>2. Formulating scene sequences with Gemini AI</span>
+                <UploadCloud size={32} className={styles.uploadIcon} />
+                <p className={styles.uploadText}>
+                  Drag & drop assets here, or <strong>browse files</strong>
+                </p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  style={{ display: 'none' }}
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  disabled={status !== 'idle' && status !== 'completed' && status !== 'failed'}
+                />
               </div>
 
-              <div
-                className={`${styles.stepItem} ${
-                  progressStep > 3
-                    ? styles.stepCompleted
-                    : progressStep === 3
-                    ? styles.stepActive
-                    : styles.stepPending
-                }`}
-              >
-                {progressStep > 3 ? <CheckCircle2 size={16} /> : progressStep === 3 ? <div className={styles.spinner} /> : null}
-                <span>3. Deploying remote compiler worker (GitHub Actions)</span>
-              </div>
+              {/* Selected Images Grid */}
+              {images.length > 0 && (
+                <div className={styles.thumbnailGrid}>
+                  {images.map((img, idx) => (
+                    <div key={idx} className={styles.thumbnailWrapper}>
+                      <img src={img.previewUrl} alt="Thumbnail preview" className={styles.thumbnail} />
+                      <button
+                        type="button"
+                        className={styles.removeThumbBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(idx);
+                        }}
+                        disabled={status !== 'idle' && status !== 'completed' && status !== 'failed'}
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              <div
-                className={`${styles.stepItem} ${
-                  progressStep > 4
-                    ? styles.stepCompleted
-                    : progressStep === 4
-                    ? styles.stepActive
-                    : styles.stepPending
-                }`}
-              >
-                {progressStep > 4 ? <CheckCircle2 size={16} /> : progressStep === 4 ? <div className={styles.spinner} /> : null}
-                <span>4. Rendering & stitching .mp4 video frames</span>
-              </div>
+            {/* Submit Action */}
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              disabled={!prompt.trim() || (status !== 'idle' && status !== 'completed' && status !== 'failed')}
+            >
+              {status !== 'idle' && status !== 'completed' && status !== 'failed' ? (
+                <>
+                  <Loader2 className={styles.spinner} size={20} />
+                  Generating Storyboard...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={20} />
+                  Render AI Video ✨
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Ephemeral Pipeline Notice */}
+          <div className={styles.guardrailCard}>
+            <Sparkles size={20} className={styles.guardrailIcon} />
+            <div className={styles.guardrailText}>
+              <strong>🫧 Privacy Guardrail</strong>
+              Photos and generated MP4 files are cached temporarily. Leaving, refreshing, or closing this page will trigger an instant server-side wipe.
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Video Result View */}
-        {videoUrl && (
-          <div className={styles.videoResultContainer}>
-            <h3 className={styles.trackerTitle} style={{ color: 'var(--accent)' }}>
-              🎉 Your Video is Ready!
-            </h3>
-            <div className={styles.videoWrapper}>
-              <video src={videoUrl} controls className={styles.videoElement} autoPlay loop />
-            </div>
-            
-            <div className={styles.downloadRow}>
-              <a href={videoUrl} download={`vibecut-${generationId}.mp4`} className={styles.downloadBtn}>
-                <Download size={18} />
-                Download Video File
-              </a>
-              <div className={styles.warningBanner}>
-                ⚠️ Warning: You can download the video as many times as you like now. However, if you refresh, close the page, or click anywhere else, this video is gone from our servers forever!
+        {/* Right Column: Output & Monitoring */}
+        <section className={styles.outputColumn}>
+          {/* Active Progress Tracker */}
+          {status !== 'idle' && (
+            <div className={styles.trackerCard}>
+              <h3 className={styles.trackerTitle}>
+                <RefreshCw size={18} className={styles.spinner} /> Pipeline Status
+              </h3>
+              <div className={styles.stepsList}>
+                <div className={`${styles.stepItem} ${progressStep > 1 ? styles.stepCompleted : progressStep === 1 ? styles.stepActive : styles.stepPending}`}>
+                  {progressStep > 1 ? <CheckCircle2 size={16} /> : <div className={styles.miniSpinner} />}
+                  <span>Upload assets to storage</span>
+                </div>
+
+                <div className={`${styles.stepItem} ${progressStep > 2 ? styles.stepCompleted : progressStep === 2 ? styles.stepActive : styles.stepPending}`}>
+                  {progressStep > 2 ? <CheckCircle2 size={16} /> : progressStep === 2 ? <div className={styles.miniSpinner} /> : null}
+                  <span>Gemma Storyboard Compilation</span>
+                </div>
+
+                <div className={`${styles.stepItem} ${progressStep > 3 ? styles.stepCompleted : progressStep === 3 ? styles.stepActive : styles.stepPending}`}>
+                  {progressStep > 3 ? <CheckCircle2 size={16} /> : progressStep === 3 ? <div className={styles.miniSpinner} /> : null}
+                  <span>Triggering render worker</span>
+                </div>
+
+                <div className={`${styles.stepItem} ${progressStep > 4 ? styles.stepCompleted : progressStep === 4 ? styles.stepActive : styles.stepPending}`}>
+                  {progressStep > 4 ? <CheckCircle2 size={16} /> : progressStep === 4 ? <div className={styles.miniSpinner} /> : null}
+                  <span>Rendering video frames</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Video Result View */}
+          {videoUrl && (
+            <div className={styles.videoResultCard}>
+              <h3 className={styles.cardSectionTitle}>🎉 Video Ready</h3>
+              <div className={styles.videoWrapper}>
+                <video src={videoUrl} controls className={styles.videoElement} autoPlay loop />
+              </div>
+              
+              <div className={styles.downloadRow}>
+                <a href={videoUrl} download={`vibecut-${generationId}.mp4`} className={styles.downloadBtn}>
+                  <Download size={18} />
+                  Download MP4 File
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Live Storyboard preview */}
+          {storyboard && (
+            <div className={styles.storyboardInspector}>
+              <div className={styles.inspectorHeader}>
+                <Layers size={18} />
+                <h3>Active Storyboard Timeline</h3>
+              </div>
+              <div className={styles.inspectorBody}>
+                <div className={styles.inspectorMeta}>
+                  <span><strong>Font:</strong> {storyboard.visualTheme?.fontFamily || 'Montserrat'}</span>
+                  <span><strong>Watermark:</strong> {storyboard.visualTheme?.watermarkText || 'None'}</span>
+                </div>
+                <div className={styles.inspectorScenesTimeline}>
+                  {storyboard.scenes?.map((scene: any, idx: number) => (
+                    <div key={idx} className={styles.inspectorSceneItem}>
+                      <div className={styles.sceneNumber}>
+                        {scene.sceneType === 'intro' ? '🏁 Intro' : scene.sceneType === 'outro' ? '🏁 Outro' : `🎬 Scene ${idx}`}
+                      </div>
+                      <div className={styles.sceneSummary}>
+                        {scene.textOverlay && <div className={styles.sceneText}>"{scene.textOverlay}"</div>}
+                        {scene.subtitle && <div className={styles.sceneSubtitle}>"{scene.subtitle}"</div>}
+                        <div className={styles.sceneMetrics}>
+                          <span>⏱️ {Math.round(scene.durationInFrames / 30 * 10) / 10}s</span>
+                          <span>🎨 {scene.effect}</span>
+                          <span>🖼️ {scene.border}</span>
+                          {scene.contactPhone && <span>📞 {scene.contactPhone}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Idle Placeholder */}
+          {status === 'idle' && (
+            <div className={styles.emptyOutputCard}>
+              <Play size={40} className={styles.emptyIcon} />
+              <h3>Awaiting Creation</h3>
+              <p>Configure your prompt, upload images, and click "Render AI Video" to view compilation pipeline logs here.</p>
+            </div>
+          )}
+
+          {/* Error Output */}
+          {errorMessage && (
+            <div className={styles.errorMessage}>
+              <div className={styles.errorHeader}>
+                <AlertCircle size={18} />
+                <span>Console Alert</span>
+              </div>
+              <p>{errorMessage}</p>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );

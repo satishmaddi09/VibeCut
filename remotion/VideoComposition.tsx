@@ -15,17 +15,30 @@ export interface SceneData {
   durationInFrames: number;
   imageIdx: number;
   imageUrl?: string | null;
+  imageIndices?: number[];
+  imageUrls?: (string | null)[];
   textOverlay: string;
   textStyle: 'bold-clean' | 'metallic-gold' | 'neon-glow' | 'glitch-red-blue' | 'serif-elegant' | 'retro-vhs' | 'cyberpunk-hacker' | 'editorial-minimal';
   textAnimation: 'kinetic-spring' | 'fade' | 'slide-up' | 'zoom-in' | 'slide-left' | 'typewriter' | 'none';
   imageAnimation: 'pan' | 'zoom-slow' | 'zoom-fast-beat' | 'shake-beat' | 'zoom-in-out' | 'slide-slow' | 'spin-transition' | 'whip-left' | 'whip-right' | 'bounce-beat' | 'none';
-  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'optical-glow' | 'rgb-split-beat' | 'lens-flare' | 'shine-sweep' | 'dream-bloom' | 'glass-refraction' | 'shake-flash-beat' | 'none';
-  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'fire-embers' | 'gold-dust' | 'floating-petals' | 'none';
+  effect: 'glitch' | 'flash' | 'vignette' | 'film-grain' | 'vhs-distortion' | 'chromatic-aberration' | 'radial-blur' | 'optical-glow' | 'rgb-split-beat' | 'lens-flare' | 'shine-sweep' | 'dream-bloom' | 'glass-refraction' | 'shake-flash-beat' | 'sharp-details' | 'stage-spotlight' | 'metallic-shine' | 'prism-split' | 'shape-bursts' | 'none';
+  particleOverlay: 'gold-flakes' | 'sparkles' | 'dust-particles' | 'digital-rain' | 'fire-embers' | 'gold-dust' | 'floating-petals' | 'bokeh-particles' | 'film-dust-scratches' | 'none';
   lightLeak: 'aurora' | 'police-flash' | 'gold-glow' | 'light-leak-warm' | 'cyber-pulse' | 'film-burn-fast' | 'multi-runway' | 'prism-refraction' | 'dreamy-haze' | 'none';
   letterbox: boolean;
-  border: 'none' | 'gold-filigree' | 'neon-frame' | 'vhs-borders' | 'cyber-scanner' | 'thin-line' | 'drawing-pulse' | 'corners-only' | 'ornament-lace';
-  layout?: 'framed' | 'full-bleed' | 'full-width-centered';
+  border: 'none' | 'gold-filigree' | 'neon-frame' | 'vhs-borders' | 'cyber-scanner' | 'thin-line' | 'drawing-pulse' | 'corners-only' | 'ornament-lace' | 'theater-curtains' | 'cyber-hud' | 'lower-third' | 'kinetic-reveal';
+  layout?: 'framed' | 'full-bleed' | 'full-width-centered' | 'split-comparison' | 'grid-4' | 'grid-6';
   colorFilter?: 'none' | 'teal-orange' | 'vintage-warm' | 'emerald-luxury' | 'noir-bw' | 'hdr-vibrant';
+  sceneType?: 'intro' | 'showcase' | 'outro';
+  outroType?: 'whatsapp-contact' | 'social-badge' | 'website-link' | 'simple-clean' | 'instagram-profile' | 'youtube-channel' | 'business-card';
+  subtitle?: string;
+  contactPhone?: string;
+  contactCTA?: string;
+  imageRotationCorrect?: number;
+  imageZoomOverride?: number;
+  imagePositionOffset?: string;
+  imageRotationCorrects?: number[];
+  imageZoomOverrides?: number[];
+  imagePositionOffsets?: string[];
 }
 
 export interface VisualTheme {
@@ -45,6 +58,32 @@ export interface Storyboard {
 const getFadeRange = (duration: number, maxFade: number) => {
   const fade = Math.min(maxFade, Math.floor(duration / 2.5));
   return [0, fade, duration - fade, duration];
+};
+
+const getSceneImagePlacement = (scene: SceneData, indexInScene: number = 0) => {
+  let rotation = 0;
+  let zoom = 1.0;
+  let position = 'center';
+
+  if (scene.imageRotationCorrects && Array.isArray(scene.imageRotationCorrects) && scene.imageRotationCorrects[indexInScene] !== undefined) {
+    rotation = scene.imageRotationCorrects[indexInScene];
+  } else if (typeof scene.imageRotationCorrect === 'number') {
+    rotation = scene.imageRotationCorrect;
+  }
+
+  if (scene.imageZoomOverrides && Array.isArray(scene.imageZoomOverrides) && scene.imageZoomOverrides[indexInScene] !== undefined) {
+    zoom = scene.imageZoomOverrides[indexInScene];
+  } else if (typeof scene.imageZoomOverride === 'number') {
+    zoom = scene.imageZoomOverride;
+  }
+
+  if (scene.imagePositionOffsets && Array.isArray(scene.imagePositionOffsets) && scene.imagePositionOffsets[indexInScene] !== undefined) {
+    position = scene.imagePositionOffsets[indexInScene];
+  } else if (typeof scene.imagePositionOffset === 'string') {
+    position = scene.imagePositionOffset;
+  }
+
+  return { rotation, zoom, position };
 };
 
 export const defaultStoryboard: Storyboard = {
@@ -1226,6 +1265,1277 @@ const NeonGlowText: React.FC<{ text: string; font: string; color: string }> = ({
   );
 };
 
+// --- Dedicated Intro & Outro Templates ---
+
+const DynamicBlurredBackground: React.FC<{ 
+  src: string;
+  rotation?: number;
+  zoom?: number;
+  position?: string;
+}> = ({ src, rotation = 0, zoom = 1, position = 'center' }) => {
+  return (
+    <div style={{
+      position: "absolute",
+      inset: -30,
+      filter: "blur(38px) brightness(0.14) saturate(1.1)",
+      transform: `scale(1.12) rotate(${rotation}deg) scale(${zoom})`,
+      zIndex: 1,
+    }}>
+      <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: position }} />
+    </div>
+  );
+};
+
+const IntroSlide: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ scene, theme }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const reveal = spring({ frame, fps, config: { damping: 12, stiffness: 60 } });
+  const GOLD_METALLIC = 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)';
+
+  return (
+    <AbsoluteFill style={{ background: "#000805", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {scene.imageUrl && (
+        <DynamicBlurredBackground 
+          src={scene.imageUrl} 
+          rotation={scene.imageRotationCorrect}
+          zoom={scene.imageZoomOverride}
+          position={scene.imagePositionOffset}
+        />
+      )}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 2,
+        background: "radial-gradient(circle, transparent 20%, rgba(0,0,0,0.94) 100%)",
+      }} />
+
+      <div style={{ zIndex: 10, textAlign: "center", padding: "0 40px", transform: `scale(${0.9 + 0.1 * reveal})`, opacity: reveal }}>
+        <div style={{
+          fontFamily: theme.fontFamily || 'sans-serif',
+          fontSize: 70,
+          fontWeight: 900,
+          color: '#FFD700',
+          letterSpacing: 6,
+          background: GOLD_METALLIC,
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.95))",
+          textTransform: 'uppercase',
+          lineHeight: 1.15,
+        }}>
+          {scene.textOverlay || "WELCOME"}
+        </div>
+
+        <div style={{
+          width: 320, height: 3.5,
+          background: GOLD_METALLIC,
+          boxShadow: `0 0 12px #FFD700`,
+          margin: "24px auto"
+        }} />
+
+        {scene.subtitle && (
+          <div style={{
+            fontFamily: theme.fontFamily || 'sans-serif',
+            fontSize: 28,
+            color: "#FFF",
+            letterSpacing: 7,
+            textTransform: "uppercase",
+            textShadow: "0 2px 8px rgba(0,0,0,0.9)",
+          }}>
+            {scene.subtitle}
+          </div>
+        )}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const OutroSlide: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ scene, theme }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  const cardIn = spring({ frame, fps, config: { damping: 13, stiffness: 50, mass: 0.95 } });
+  const text1In = spring({ frame: frame - 8, fps, config: { damping: 12, stiffness: 65 } });
+  const dividerIn = spring({ frame: frame - 15, fps, config: { damping: 10, stiffness: 75 } });
+  const text2In = spring({ frame: frame - 20, fps, config: { damping: 12, stiffness: 60 } });
+  const waBoxIn = spring({ frame: frame - 26, fps, config: { damping: 12, stiffness: 50 } });
+
+  const pulse = 0.94 + 0.06 * Math.sin(frame * 0.1);
+  const GOLD_METALLIC = 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)';
+  
+  const phoneNum = scene.contactPhone || "";
+  const ctaText = scene.contactCTA || "Visit Us";
+  const outroType = scene.outroType || "simple-clean";
+
+  // Card Visual Theme styling based on scene.textStyle
+  const textStyle = scene.textStyle || "bold-clean";
+
+  let accentColor = "#FFFFFF";
+  let boxBg = "rgba(10, 10, 10, 0.86)";
+  let borderGrad = "rgba(255, 255, 255, 0.3)";
+  
+  let iconSvg = (
+    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+  
+  let dividerElement = (
+    <div style={{
+      width: 400 * dividerIn,
+      height: 2,
+      background: "#FFFFFF",
+      boxShadow: "0 0 10px #FFFFFF",
+      margin: "30px 0",
+      opacity: dividerIn,
+    }} />
+  );
+
+  const isGoldTheme = textStyle === "metallic-gold" || textStyle === "serif-elegant";
+  const isCyberTheme = textStyle === "neon-glow" || textStyle === "glitch-red-blue" || textStyle === "cyberpunk-hacker";
+
+  let crestTransform = `scale(${cardIn})`;
+  let titleFont = theme.fontFamily || 'sans-serif';
+  let titleStyle: React.CSSProperties = {};
+  let subtitleStyle: React.CSSProperties = {
+    color: "#FFF",
+    letterSpacing: 5,
+    textTransform: "uppercase",
+  };
+
+  if (isGoldTheme) {
+    accentColor = "#D4AF37"; // Gold
+    boxBg = "rgba(12, 7, 3, 0.88)"; // Warm luxury dark bronze
+    borderGrad = "rgba(212, 175, 55, 0.45)";
+    titleFont = "'Playfair Display', Georgia, serif";
+    crestTransform = `scale(${cardIn}) rotate(${frame * 0.15}deg)`;
+    
+    iconSvg = (
+      <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none" style={{ filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.8))' }}>
+        <defs>
+          <linearGradient id="goldGradCrest" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFF2A3" />
+            <stop offset="30%" stopColor="#FFD700" />
+            <stop offset="70%" stopColor="#D4AF37" />
+            <stop offset="100%" stopColor="#AA7C11" />
+          </linearGradient>
+        </defs>
+        {/* Outer octagram / star polygon */}
+        <path d="M 50 2 L 64 36 L 98 50 L 64 64 L 50 98 L 36 64 L 2 50 L 36 36 Z" stroke="url(#goldGradCrest)" strokeWidth={2} />
+        <path d="M 50 14 L 60 40 L 86 50 L 60 60 L 50 86 L 40 60 L 14 50 L 40 40 Z" stroke="url(#goldGradCrest)" strokeWidth={1} style={{ opacity: 0.6 }} />
+        {/* Central circular layers */}
+        <circle cx={50} cy={50} r={18} stroke="url(#goldGradCrest)" strokeWidth={2.5} />
+        <circle cx={50} cy={50} r={12} stroke="#FF1744" strokeWidth={1.5} />
+        <circle cx={50} cy={50} r={6} fill="url(#goldGradCrest)" />
+        {/* Pearls at points */}
+        <circle cx={50} cy={2} r={2.5} fill="#FFF" />
+        <circle cx={98} cy={50} r={2.5} fill="#FFF" />
+        <circle cx={50} cy={98} r={2.5} fill="#FFF" />
+        <circle cx={2} cy={50} r={2.5} fill="#FFF" />
+      </svg>
+    );
+
+    dividerElement = (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        margin: "30px 0",
+        opacity: dividerIn,
+        transform: `scaleX(${dividerIn})`,
+      }}>
+        <div style={{ width: 140, height: 1, background: "linear-gradient(to right, transparent, #D4AF37)" }} />
+        <div style={{ width: 6, height: 6, transform: "rotate(45deg)", background: "#D4AF37" }} />
+        <div style={{ width: 8, height: 8, transform: "rotate(45deg)", background: "#FFD700", boxShadow: "0 0 6px #FFD700" }} />
+        <div style={{ width: 6, height: 6, transform: "rotate(45deg)", background: "#D4AF37" }} />
+        <div style={{ width: 140, height: 1, background: "linear-gradient(to left, transparent, #D4AF37)" }} />
+      </div>
+    );
+
+    titleStyle = {
+      backgroundImage: GOLD_METALLIC,
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      fontStyle: textStyle === "serif-elegant" ? 'italic' : 'normal',
+      fontWeight: textStyle === "serif-elegant" ? 300 : 'bold',
+    };
+
+    subtitleStyle = {
+      color: "rgba(255, 255, 255, 0.95)",
+      letterSpacing: 4,
+      fontStyle: textStyle === "serif-elegant" ? 'italic' : 'normal',
+      textTransform: "uppercase",
+    };
+
+  } else if (textStyle === "cyberpunk-hacker" || textStyle === "neon-glow") {
+    accentColor = textStyle === "cyberpunk-hacker" ? "#39ff14" : "#00f0ff"; // Green or Cyan
+    boxBg = "rgba(2, 6, 12, 0.9)"; // Cyber dark blue-black
+    borderGrad = textStyle === "cyberpunk-hacker" ? "rgba(57, 255, 20, 0.45)" : "rgba(0, 240, 255, 0.45)";
+    titleFont = "monospace";
+    crestTransform = `scale(${cardIn}) rotate(${frame * -0.2}deg)`;
+    
+    iconSvg = (
+      <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ filter: `drop-shadow(0 0 10px ${accentColor})` }}>
+        <circle cx="50" cy="50" r="35" fill="none" stroke={accentColor} strokeWidth="2" strokeDasharray="10 6" />
+        <circle cx="50" cy="50" r="20" fill="none" stroke="#ff007f" strokeWidth="1.5" />
+        <path d="M 50 5 L 50 20 M 50 80 L 50 95 M 5 50 L 20 50 M 80 50 L 95 50" stroke={accentColor} strokeWidth="2" />
+      </svg>
+    );
+
+    dividerElement = (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        margin: "30px 0",
+        opacity: dividerIn,
+        transform: `scaleX(${dividerIn})`,
+      }}>
+        <div style={{ width: 140, height: 2, background: "linear-gradient(to right, transparent, #ff007f)" }} />
+        <div style={{ width: 16, height: 6, background: accentColor, boxShadow: `0 0 8px ${accentColor}`, borderRadius: 2 }} />
+        <div style={{ width: 140, height: 2, background: "linear-gradient(to left, transparent, #ff007f)" }} />
+      </div>
+    );
+
+    titleStyle = {
+      color: accentColor,
+      textShadow: `0 0 10px ${accentColor}`,
+    };
+
+    subtitleStyle = {
+      color: "#FFF",
+      fontFamily: "monospace",
+      letterSpacing: 3,
+      textShadow: `0 0 6px ${accentColor}88`,
+      textTransform: "uppercase",
+    };
+
+  } else if (textStyle === "retro-vhs") {
+    accentColor = "#FFFFFF";
+    boxBg = "rgba(8, 10, 16, 0.88)"; // VHS deep blue-black
+    borderGrad = "rgba(255, 255, 255, 0.25)";
+    titleFont = "Courier New, monospace";
+    
+    iconSvg = (
+      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2}>
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+        <circle cx="18" cy="10" r="1.5" fill="#FFF" />
+      </svg>
+    );
+
+    dividerElement = (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '30px 0', opacity: dividerIn }}>
+        <div style={{ width: 120, height: 1, backgroundColor: 'rgba(255,255,255,0.4)' }} />
+        <span style={{ fontFamily: 'Courier New, monospace', fontSize: 12, color: 'rgba(255,255,255,0.6)', letterSpacing: 2 }}>[TRACKING]</span>
+        <div style={{ width: 120, height: 1, backgroundColor: 'rgba(255,255,255,0.4)' }} />
+      </div>
+    );
+
+    titleStyle = {
+      color: "#FFFFFF",
+      textShadow: '3px 3px #06b6d4, -3px -3px #eab308, 0 4px 10px rgba(0,0,0,0.9)',
+    };
+
+    subtitleStyle = {
+      color: "rgba(255,255,255,0.9)",
+      fontFamily: "Courier New, monospace",
+      letterSpacing: 6,
+      textTransform: "uppercase",
+    };
+
+  } else if (textStyle === "glitch-red-blue") {
+    accentColor = "#00f0ff";
+    boxBg = "rgba(10, 2, 4, 0.9)"; // Deep red-black
+    borderGrad = "rgba(236, 72, 153, 0.6)"; // Neon pink glow
+    titleFont = theme.fontFamily || 'sans-serif';
+    crestTransform = `scale(${cardIn}) translate(${Math.sin(frame) * 2}px, ${Math.cos(frame * 1.5) * 2}px)`;
+    
+    iconSvg = (
+      <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ filter: 'drop-shadow(3px 0px 0px rgba(255,0,60,0.85)) drop-shadow(-3px 0px 0px rgba(0,240,255,0.85))' }}>
+        <polygon points="50,12 90,82 10,82" fill="none" stroke="#FFF" strokeWidth="4.5" />
+        <polygon points="50,28 78,78 22,78" fill="none" stroke="#FFF" strokeWidth="2" strokeDasharray="5 5" />
+      </svg>
+    );
+
+    dividerElement = (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '30px 0', opacity: dividerIn }}>
+        <div style={{ width: 120, height: 3, backgroundColor: '#ff003c', boxShadow: '0 0 8px #ff003c' }} />
+        <span style={{ fontSize: 14, fontWeight: 900, color: '#00f0ff', textShadow: '2px 0 #ff003c, -2px 0 #00f0ff', letterSpacing: 2 }}>// ERROR //</span>
+        <div style={{ width: 120, height: 3, backgroundColor: '#00f0ff', boxShadow: '0 0 8px #00f0ff' }} />
+      </div>
+    );
+
+    titleStyle = {
+      color: "#FFFFFF",
+      textShadow: '3px 0 #ff003c, -3px 0 #00f0ff, 0 4px 10px rgba(0,0,0,0.9)',
+    };
+
+    subtitleStyle = {
+      color: "#00f0ff",
+      letterSpacing: 4,
+      textShadow: '1px 0 #ff003c, -1px 0 #00f0ff',
+      textTransform: "uppercase",
+    };
+
+  } else if (textStyle === "editorial-minimal") {
+    accentColor = "#FFFFFF";
+    boxBg = "rgba(15, 15, 15, 0.82)"; // Sleek translucent dark card
+    borderGrad = "rgba(255, 255, 255, 0.15)";
+    titleFont = theme.fontFamily || 'sans-serif';
+    
+    iconSvg = (
+      <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ opacity: 0.85 }}>
+        <circle cx="50" cy="50" r="28" fill="none" stroke="#FFF" strokeWidth="1.5" />
+        <circle cx="50" cy="50" r="4" fill="#FFF" />
+      </svg>
+    );
+
+    dividerElement = (
+      <div style={{ width: 220, height: 1, backgroundColor: 'rgba(255,255,255,0.18)', margin: '35px 0', opacity: dividerIn }} />
+    );
+
+    titleStyle = {
+      fontWeight: 300,
+      letterSpacing: 8,
+    };
+
+    subtitleStyle = {
+      color: "rgba(255, 255, 255, 0.7)",
+      letterSpacing: 6,
+      fontSize: 18,
+      fontWeight: 300,
+      textTransform: "uppercase",
+    };
+
+  } else {
+    // Default bold-clean
+    accentColor = theme.textColor || "#FFFFFF";
+    boxBg = "rgba(10, 10, 10, 0.86)";
+    borderGrad = "rgba(255, 255, 255, 0.3)";
+    titleFont = theme.fontFamily || 'sans-serif';
+    
+    iconSvg = (
+      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    );
+    
+    dividerElement = (
+      <div style={{
+        width: 320 * dividerIn,
+        height: 2,
+        background: accentColor,
+        boxShadow: `0 0 10px ${accentColor}44`,
+        margin: "30px 0",
+        opacity: dividerIn,
+      }} />
+    );
+
+    titleStyle = {
+      fontWeight: 900,
+      letterSpacing: 3,
+    };
+
+    subtitleStyle = {
+      color: "#FFF",
+      letterSpacing: 5,
+      textTransform: "uppercase",
+    };
+  }
+
+  // CTA Button Specific Branding (independent of card theme)
+  let ctaAccentColor = "#D4AF37";
+  let ctaBoxBg = "rgba(212, 175, 55, 0.1)";
+  let ctaBorderColor = "#D4AF37";
+  let buttonIcon = null;
+
+  if (outroType === "whatsapp-contact") {
+    ctaAccentColor = "#25D366"; // WhatsApp green
+    ctaBoxBg = "rgba(37, 211, 102, 0.08)";
+    ctaBorderColor = "#25D366";
+    buttonIcon = (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#25D366" style={{ marginRight: 8 }}>
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+      </svg>
+    );
+  } else if (outroType === "instagram-profile") {
+    ctaAccentColor = "#E1306C";
+    ctaBoxBg = "rgba(225, 48, 108, 0.08)";
+    ctaBorderColor = "#E1306C";
+    buttonIcon = (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}>
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+      </svg>
+    );
+  } else if (outroType === "youtube-channel") {
+    ctaAccentColor = "#FF0000";
+    ctaBoxBg = "rgba(255, 0, 0, 0.08)";
+    ctaBorderColor = "#FF0000";
+    buttonIcon = (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF0000" style={{ marginRight: 8 }}>
+        <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.522 3.54 12 3.54 12 3.54s-7.522 0-9.388.513a3.003 3.003 0 0 0-2.11 2.11C0 8.028 0 12 0 12s0 3.972.502 5.837a3.003 3.003 0 0 0 2.11 2.11C4.478 20.46 12 20.46 12 20.46s7.522 0 9.388-.513a3.003 3.003 0 0 0 2.11-2.11C24 15.972 24 12 24 12s0-3.972-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+      </svg>
+    );
+  } else if (outroType === "website-link") {
+    ctaAccentColor = "#00f0ff";
+    ctaBoxBg = "rgba(0, 240, 255, 0.08)";
+    ctaBorderColor = "#00f0ff";
+    buttonIcon = (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" strokeWidth={2} style={{ marginRight: 8 }}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20" />
+      </svg>
+    );
+  } else if (outroType === "social-badge") {
+    ctaAccentColor = "#FFD700";
+    ctaBoxBg = "rgba(255, 215, 0, 0.08)";
+    ctaBorderColor = "#FFD700";
+    buttonIcon = (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFD700" style={{ marginRight: 8 }}>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    );
+  } else if (outroType === "business-card") {
+    ctaAccentColor = "#00e5ff";
+    ctaBoxBg = "rgba(0, 229, 255, 0.08)";
+    ctaBorderColor = "#00e5ff";
+    buttonIcon = (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}>
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+      </svg>
+    );
+  } else {
+    // default (simple-clean)
+    ctaAccentColor = accentColor;
+    ctaBoxBg = "rgba(255, 255, 255, 0.08)";
+    ctaBorderColor = accentColor;
+    buttonIcon = null;
+  }
+
+  const placement = getSceneImagePlacement(scene, 0);
+
+  const bgImageLeft = scene.imageUrl || (scene.imageUrls && scene.imageUrls[0]) || null;
+  const bgImageRight = (scene.imageUrls && scene.imageUrls[1]) || bgImageLeft;
+
+  return (
+    <AbsoluteFill style={{ background: "#000805", overflow: "hidden" }}>
+      {bgImageLeft ? (
+        <div style={{ position: "absolute", inset: -20, display: "flex", zIndex: 1 }}>
+          <div style={{ flex: 1, height: "100%", overflow: "hidden", filter: "blur(28px) brightness(0.18) saturate(1.2)" }}>
+            <Img src={bgImageLeft} style={{ 
+              width: "100%", height: "100%", 
+              objectFit: "cover",
+              objectPosition: placement.position,
+              transform: `rotate(${placement.rotation}deg) scale(${placement.zoom})`
+            }} />
+          </div>
+          <div style={{ width: 3, height: "100%", background: accentColor, opacity: 0.25 }} />
+          <div style={{ flex: 1, height: "100%", overflow: "hidden", filter: "blur(28px) brightness(0.18) saturate(1.2)" }}>
+            <Img src={bgImageRight || ''} style={{ 
+              width: "100%", height: "100%", 
+              objectFit: "cover",
+              objectPosition: placement.position,
+              transform: `rotate(${placement.rotation}deg) scale(${placement.zoom})`
+            }} />
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(135deg, ${theme.backgroundGradientStart}, ${theme.backgroundGradientEnd})`,
+          zIndex: 1
+        }} />
+      )}
+
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 2,
+        background: "radial-gradient(circle, transparent 20%, rgba(0,0,0,0.95) 100%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{
+        position: "absolute",
+        top: "50%", left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 860,
+        height: 1160,
+        zIndex: 5,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <div style={{
+          width: "100%",
+          height: "100%",
+          background: boxBg,
+          border: `2.5px solid ${borderGrad}`,
+          borderRadius: "36px",
+          backdropFilter: "blur(20px)",
+          boxShadow: "0 35px 80px rgba(0, 0, 0, 0.95), inset 0 1px 3px rgba(255, 255, 255, 0.15)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "50px",
+          transform: `scale(${cardIn})`,
+        }}>
+          <div style={{
+            position: "absolute",
+            inset: 20,
+            border: `1.5px solid ${accentColor}33`,
+            borderRadius: "24px",
+            pointerEvents: "none",
+          }} />
+
+          {/* Icon Crest */}
+          <div style={{
+            width: 140,
+            height: 140,
+            marginBottom: 25,
+            transform: crestTransform,
+            opacity: cardIn,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            filter: `drop-shadow(0 4px 12px ${accentColor}44)`,
+          }}>
+            {iconSvg}
+          </div>
+
+          {/* Headline Text */}
+          <div style={{
+            fontFamily: titleFont,
+            fontSize: 70,
+            fontWeight: "bold",
+            textAlign: "center",
+            lineHeight: 1.05,
+            letterSpacing: 4,
+            transform: `translateY(${(1 - text1In) * 30}px)`,
+            opacity: text1In,
+            filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.9))",
+            textTransform: 'uppercase',
+            color: accentColor,
+            ...titleStyle
+          }}>
+            {scene.textOverlay || "Thank You"}
+          </div>
+
+          {dividerElement}
+
+          {/* Subtitle */}
+          {scene.subtitle && (
+            <div style={{
+              fontFamily: theme.fontFamily || 'sans-serif',
+              fontSize: 24,
+              textAlign: "center",
+              transform: `translateY(${(1 - text2In) * 20}px)`,
+              opacity: text2In,
+              textShadow: "0 3px 8px rgba(0,0,0,0.95)",
+              ...subtitleStyle
+            }}>
+              {scene.subtitle}
+            </div>
+          )}
+
+          {/* Action Box */}
+          {phoneNum && (
+            <div style={{
+              transform: `scale(${waBoxIn}) translateY(${(1 - waBoxIn) * 30}px)`,
+              opacity: waBoxIn,
+              marginTop: 40,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "24px 40px",
+              background: ctaBoxBg,
+              border: `2px solid ${ctaBorderColor}`,
+              borderRadius: "22px",
+              boxShadow: `0 0 ${35 * pulse}px ${ctaBorderColor}33`,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                {buttonIcon}
+                <span style={{ fontSize: 13, fontWeight: 900, color: ctaAccentColor, letterSpacing: 2, textTransform: "uppercase" }}>
+                  {ctaText}
+                </span>
+              </div>
+              <div style={{
+                fontFamily: theme.fontFamily || 'sans-serif',
+                fontWeight: 900,
+                fontSize: phoneNum.length > 15 ? 28 : 40,
+                color: "#FFF",
+                letterSpacing: 2,
+                textAlign: "center",
+                textShadow: "0 3px 10px rgba(0,0,0,0.6)",
+              }}>
+                {phoneNum}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ==========================================
+// 4.5. GENERAL-PURPOSE LAYOUTS & MOTION GRAPHICS HELPERS
+
+// Velvet Curtains opening/closing reveal
+const TheaterCurtains: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  
+  // opening: 0 to 22 frames; closing: (duration - 22) to duration
+  const openT = interpolate(frame, [0, 22], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const closeT = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  
+  const progress = frame < durationInFrames / 2 ? openT : closeT; // 0 = closed (curtains meet), 1 = open (curtains offscreen)
+  const leftTranslate = -50 * progress; // % width
+  const rightTranslate = 50 * progress; // % width
+  
+  const GOLD = '#D4AF37';
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 18 }}>
+      {/* Left Curtain */}
+      <div style={{
+        position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%',
+        background: 'repeating-linear-gradient(90deg, #5A000A 0px, #7A0010 30px, #9A001E 60px, #7A0010 90px, #5A000A 120px)',
+        borderRight: `4px solid ${GOLD}`,
+        boxShadow: '0 0 25px rgba(0,0,0,0.8), 5px 0 15px rgba(212,175,55,0.4)',
+        transform: `translateX(${leftTranslate}%)`,
+        transition: 'transform 0.05s linear',
+      }}>
+        {/* Curtain drape rope detail */}
+        <div style={{
+          position: 'absolute', right: 10, bottom: 80, width: 30, height: 120,
+          border: `2px solid ${GOLD}`, borderRight: 'none', borderRadius: '20px 0 0 20px',
+          opacity: 1 - progress,
+        }} />
+      </div>
+      
+      {/* Right Curtain */}
+      <div style={{
+        position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%',
+        background: 'repeating-linear-gradient(90deg, #5A000A 0px, #7A0010 30px, #9A001E 60px, #7A0010 90px, #5A000A 120px)',
+        borderLeft: `4px solid ${GOLD}`,
+        boxShadow: '0 0 25px rgba(0,0,0,0.8), -5px 0 15px rgba(212,175,55,0.4)',
+        transform: `translateX(${rightTranslate}%)`,
+        transition: 'transform 0.05s linear',
+      }}>
+        {/* Curtain drape rope detail */}
+        <div style={{
+          position: 'absolute', left: 10, bottom: 80, width: 30, height: 120,
+          border: `2px solid ${GOLD}`, borderLeft: 'none', borderRadius: '0 20px 20px 0',
+          opacity: 1 - progress,
+        }} />
+      </div>
+    </div>
+  );
+};
+
+// Golden Stage Spotlight Ray Sweep
+const Spotlight: React.FC = () => {
+  const frame = useCurrentFrame();
+  // Sweep back and forth
+  const angle = interpolate(Math.sin(frame * 0.04), [-1, 1], [-20, 20]);
+  return (
+    <div style={{
+      position: 'absolute',
+      left: '50%',
+      top: -20,
+      width: 400,
+      height: 800,
+      background: 'linear-gradient(to bottom, rgba(255, 215, 0, 0.22) 0%, rgba(255, 215, 0, 0.05) 50%, transparent 100%)',
+      clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+      transformOrigin: 'top center',
+      transform: `translateX(-50%) rotate(${angle}deg)`,
+      mixBlendMode: 'screen',
+      pointerEvents: 'none',
+      zIndex: 13,
+    }} />
+  );
+};
+
+// Metallic Shine Sweep Reflection Highlight
+const ShineSweepOverlay: React.FC = () => {
+  const frame = useCurrentFrame();
+  // sweeps from left to right (from -120% to 220%)
+  const tx = interpolate(frame % 90, [10, 50], [-120, 220], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 12, overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, bottom: 0, width: '60%',
+        background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.45) 45%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.45) 55%, transparent 70%)',
+        transform: `translateX(${tx}%) skewX(-25deg)`,
+        mixBlendMode: 'overlay',
+      }} />
+    </div>
+  );
+};
+
+// Prism Chromatic Edge Refraction Overlay
+const PrismRefractionOverlay: React.FC<{ 
+  imageUrl: string; 
+  layout: string;
+  rotation?: number;
+  zoom?: number;
+  position?: string;
+}> = ({ imageUrl, layout, rotation = 0, zoom = 1, position = 'center' }) => {
+  const frame = useCurrentFrame();
+  const objFit = layout === 'full-bleed' ? 'cover' : 'contain';
+  
+  // Breathing/pulse size for the duplicated frames
+  const offset = Math.sin(frame * 0.1) * 6;
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 11, overflow: 'hidden' }}>
+      {/* Left refracted clone */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        opacity: 0.16,
+        transform: `scale(1.05) translate(${-12 + offset}px, ${offset}px) rotate(-1.5deg)`,
+        filter: 'hue-rotate(90deg) blur(3px) contrast(1.2)',
+        mixBlendMode: 'screen',
+      }}>
+        <Img src={imageUrl} style={{ 
+          width: '100%', height: '100%', 
+          objectFit: objFit,
+          objectPosition: position,
+          transform: `rotate(${rotation}deg) scale(${zoom})`
+        }} />
+      </div>
+      
+      {/* Right refracted clone */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        opacity: 0.16,
+        transform: `scale(1.05) translate(${12 - offset}px, ${-offset}px) rotate(1.5deg)`,
+        filter: 'hue-rotate(-90deg) blur(3px) contrast(1.2)',
+        mixBlendMode: 'screen',
+      }}>
+        <Img src={imageUrl} style={{ 
+          width: '100%', height: '100%', 
+          objectFit: objFit,
+          objectPosition: position,
+          transform: `rotate(${rotation}deg) scale(${zoom})`
+        }} />
+      </div>
+    </div>
+  );
+};
+
+// Cyber HUD Reticle & Scanning Coordinates
+const CyberHudOverlay: React.FC = () => {
+  const frame = useCurrentFrame();
+  
+  // Deterministic fake coordinates that change every 6 frames
+  const seed = Math.floor(frame / 6);
+  const lat = (45.1235 + Math.sin(seed * 1.7) * 0.05).toFixed(4);
+  const lng = (-122.4356 + Math.cos(seed * 2.3) * 0.05).toFixed(4);
+  
+  // Scanning line slide
+  const scanY = interpolate(frame % 60, [0, 60], [0, 100]);
+  
+  return (
+    <div style={{
+      position: 'absolute', inset: 32, pointerEvents: 'none', zIndex: 14,
+      border: '1px solid rgba(0, 240, 255, 0.25)',
+      fontFamily: 'monospace', fontSize: 11, color: '#00f0ff',
+      textShadow: '0 0 4px rgba(0,240,255,0.6)',
+    }}>
+      {/* Center crosshair */}
+      <div style={{
+        position: 'absolute', left: '50%', top: '50%',
+        width: 20, height: 20,
+        border: '1px solid rgba(0, 240, 255, 0.6)',
+        borderRadius: '50%',
+        transform: 'translate(-50%, -50%)',
+      }}>
+        <div style={{ position: 'absolute', left: '50%', top: -6, bottom: -6, width: 1, background: '#00f0ff', transform: 'translateX(-50%)' }} />
+        <div style={{ position: 'absolute', top: '50%', left: -6, right: -6, height: 1, background: '#00f0ff', transform: 'translateY(-50%)' }} />
+      </div>
+      
+      {/* Top Left Bracket */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: 25, height: 25, borderTop: '2px solid #00f0ff', borderLeft: '2px solid #00f0ff' }} />
+      {/* Top Right Bracket */}
+      <div style={{ position: 'absolute', top: 0, right: 0, width: 25, height: 25, borderTop: '2px solid #00f0ff', borderRight: '2px solid #00f0ff' }} />
+      {/* Bottom Left Bracket */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, width: 25, height: 25, borderBottom: '2px solid #00f0ff', borderLeft: '2px solid #00f0ff' }} />
+      {/* Bottom Right Bracket */}
+      <div style={{ position: 'absolute', bottom: 0, right: 0, width: 25, height: 25, borderBottom: '2px solid #00f0ff', borderRight: '2px solid #00f0ff' }} />
+      
+      {/* Scanning laser bar */}
+      <div style={{
+        position: 'absolute', left: 0, right: 0, height: 2,
+        background: 'linear-gradient(to right, transparent, rgba(0,240,255,0.7), transparent)',
+        boxShadow: '0 0 10px #00f0ff',
+        top: `${scanY}%`,
+      }} />
+      
+      {/* Data display overlays */}
+      <div style={{ position: 'absolute', top: 8, left: 8 }}>SYS_ACTIVE // REC_001</div>
+      <div style={{ position: 'absolute', top: 8, right: 8 }}>FPS: 30.00 // LNK_OK</div>
+      <div style={{ position: 'absolute', bottom: 8, left: 8 }}>POS_LAT: {lat}</div>
+      <div style={{ position: 'absolute', bottom: 8, right: 8 }}>POS_LNG: {lng}</div>
+      <div style={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)' }}>LOCK_ON</div>
+      <div style={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)' }}>AZIMUTH: {(seed * 17.5 % 360).toFixed(1)}°</div>
+    </div>
+  );
+};
+
+// Vintage Film Dust & Scratches
+const FilmDustScratches: React.FC = () => {
+  const frame = useCurrentFrame();
+  
+  // Seedable pseudo-random generator
+  const pseudoRandom = (f: number, s: number) => {
+    const x = Math.sin(f * 12.9898 + s * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  
+  // Generate coordinates deterministically per frame so they flicker naturally
+  const dustCount = 4;
+  const dustSpots = Array.from({ length: dustCount }).map((_, i) => ({
+    x: pseudoRandom(frame, i * 10) * 100,
+    y: pseudoRandom(frame, i * 10 + 5) * 100,
+    size: 1.5 + pseudoRandom(frame, i * 10 + 2) * 3.5,
+    opacity: 0.2 + pseudoRandom(frame, i * 10 + 3) * 0.4,
+  }));
+  
+  const scratchX = pseudoRandom(frame, 99) * 100;
+  const scratchOpacity = pseudoRandom(frame, 88) > 0.6 ? 0.15 : 0.0;
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 12 }}>
+      {/* Scratches */}
+      {scratchOpacity > 0 && (
+        <div style={{
+          position: 'absolute', top: 0, bottom: 0, left: `${scratchX}%`, width: 1.2,
+          background: 'rgba(255, 255, 255, 0.45)',
+          boxShadow: '0 0 2px rgba(255, 255, 255, 0.2)',
+          opacity: scratchOpacity,
+        }} />
+      )}
+      
+      {/* Dust Specks */}
+      {dustSpots.map((d, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          left: `${d.x}%`,
+          top: `${d.y}%`,
+          width: d.size,
+          height: d.size,
+          borderRadius: '50%',
+          background: pseudoRandom(frame, i + 15) > 0.5 ? '#111' : '#EEE',
+          opacity: d.opacity,
+          transform: `scale(${pseudoRandom(frame, i + 8) > 0.5 ? 1 : 1.5})`,
+        }} />
+      ))}
+    </div>
+  );
+};
+
+// Shape Bursts (Expanding Ring & Radial Spark Lines)
+const ShapeBursts: React.FC = () => {
+  const frame = useCurrentFrame();
+  
+  // Burst runs in the first 20 frames of the scene
+  const active = frame < 20;
+  if (!active) return null;
+  
+  const ringScale = interpolate(frame, [0, 18], [0.1, 2.0], { extrapolateRight: 'clamp' });
+  const ringOpacity = interpolate(frame, [0, 18], [0.8, 0], { extrapolateRight: 'clamp' });
+  const sparkDistance = interpolate(frame, [0, 18], [0, 95], { extrapolateRight: 'clamp' });
+  const sparkLength = interpolate(frame, [0, 8, 18], [0, 30, 0], { extrapolateRight: 'clamp' });
+  const sparkOpacity = interpolate(frame, [0, 18], [0.9, 0], { extrapolateRight: 'clamp' });
+  
+  const color = '#FFD700'; // Gold theme
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 16 }}>
+      {/* Expanding Ring */}
+      <div style={{
+        position: 'absolute', left: '50%', top: '50%',
+        width: 120, height: 120,
+        border: `3px solid ${color}`,
+        borderRadius: '50%',
+        boxShadow: `0 0 10px ${color}`,
+        transform: `translate(-50%, -50%) scale(${ringScale})`,
+        opacity: ringOpacity,
+      }} />
+      
+      {/* 8 Radial Sparks */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = i * 45;
+        return (
+          <div key={i} style={{
+            position: 'absolute', left: '50%', top: '50%',
+            transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+          }}>
+            <div style={{
+              width: 4,
+              height: sparkLength,
+              background: `linear-gradient(to bottom, #FFF, ${color})`,
+              boxShadow: `0 0 8px ${color}`,
+              transform: `translateY(-${sparkDistance}px)`,
+              opacity: sparkOpacity,
+              borderRadius: '2px',
+            }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Lower-Third Sleek Info Banner
+const LowerThirdBanner: React.FC<{ title: string; subtitle?: string; font?: string }> = ({ title, subtitle, font }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  
+  // Enter slide-in (0 to 18 frames), Exit slide-out (last 18 frames)
+  const enter = interpolate(frame, [0, 18], [-450, 0], { extrapolateRight: 'clamp' });
+  const exit = interpolate(frame, [durationInFrames - 18, durationInFrames], [0, -450], { extrapolateLeft: 'clamp' });
+  const slideX = frame < durationInFrames / 2 ? enter : exit;
+  
+  return (
+    <div style={{
+      position: 'absolute', bottom: '15%', left: '8%', zIndex: 16,
+      pointerEvents: 'none',
+      transform: `translateX(${slideX}px)`,
+    }}>
+      <div style={{
+        background: 'linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 75%, transparent 100%)',
+        borderLeft: '5px solid #FFD700',
+        padding: '12px 28px 12px 18px',
+        borderRadius: '0 8px 8px 0',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+      }}>
+        <div style={{
+          fontFamily: font || 'sans-serif',
+          fontWeight: 900, fontSize: 22, color: '#FFF',
+          letterSpacing: 1.5,
+          textTransform: 'uppercase',
+        }}>
+          {title}
+        </div>
+        {subtitle && (
+          <div style={{
+            fontFamily: font || 'sans-serif',
+            fontWeight: 400, fontSize: 13, color: '#FFD700',
+            letterSpacing: 2,
+            textTransform: 'uppercase',
+            opacity: 0.9,
+          }}>
+            {subtitle}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Kinetic Bar Reveal Transition Overlay
+const KineticBarReveal: React.FC = () => {
+  const frame = useCurrentFrame();
+  
+  // Three diagonal bars sweeping across the screen at the start of a scene
+  const bar1 = interpolate(frame, [0, 15], [-120, 130], { extrapolateRight: 'clamp' });
+  const bar2 = interpolate(frame, [3, 18], [-120, 130], { extrapolateRight: 'clamp' });
+  const bar3 = interpolate(frame, [6, 20], [-120, 130], { extrapolateRight: 'clamp' });
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 17 }}>
+      {/* Bar 1 - Deep Gold */}
+      <div style={{
+        position: 'absolute', top: '-20%', bottom: '-20%', width: '35%',
+        background: 'linear-gradient(to bottom, #AA7C11, #D4AF37, #FFD700)',
+        transform: `translateX(${bar1}%) skewX(-20deg)`,
+        boxShadow: '0 0 30px rgba(0,0,0,0.5)',
+      }} />
+      
+      {/* Bar 2 - Dark Luxury Velvet */}
+      <div style={{
+        position: 'absolute', top: '-20%', bottom: '-20%', width: '40%',
+        background: 'linear-gradient(to bottom, #4A0005, #7A0010, #5A000A)',
+        transform: `translateX(${bar2}%) skewX(-20deg)`,
+        boxShadow: '0 0 30px rgba(0,0,0,0.6)',
+      }} />
+      
+      {/* Bar 3 - Sleek White Accent */}
+      <div style={{
+        position: 'absolute', top: '-20%', bottom: '-20%', width: '15%',
+        background: '#FFFFFF',
+        transform: `translateX(${bar3}%) skewX(-20deg)`,
+        boxShadow: '0 0 20px rgba(0,0,0,0.4)',
+        opacity: 0.9,
+      }} />
+    </div>
+  );
+};
+
+// Drifting Ambient Bokeh Field
+const BokehField: React.FC<{ count?: number }> = ({ count = 10 }) => {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  
+  const pseudoRandom = (idx: number, key: number) => {
+    const x = Math.sin(idx * 43.19 + key * 87.41) * 31415.926;
+    return x - Math.floor(x);
+  };
+  
+  const particles = useMemo(() => {
+    return Array.from({ length: count }).map((_, i) => ({
+      x: pseudoRandom(i, 1) * width,
+      startY: pseudoRandom(i, 2) * height,
+      size: 40 + pseudoRandom(i, 3) * 90,
+      speed: 0.8 + pseudoRandom(i, 4) * 1.5,
+      opacity: 0.1 + pseudoRandom(i, 5) * 0.15,
+      phase: pseudoRandom(i, 6) * 100,
+      color: pseudoRandom(i, 7) > 0.5 ? 'rgba(255, 220, 100, ' : 'rgba(255, 150, 100, ',
+    }));
+  }, [count, width, height]);
+  
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, overflow: 'hidden' }}>
+      {particles.map((p, i) => {
+        // Drift upwards
+        const currentY = ((p.startY - frame * p.speed) % height + height) % height;
+        // Pulse opacity slightly
+        const currentOpacity = p.opacity * (0.7 + 0.3 * Math.sin(frame * 0.04 + p.phase));
+        
+        return (
+          <div key={i} style={{
+            position: 'absolute',
+            left: p.x,
+            top: currentY,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: `${p.color}${currentOpacity})`,
+            filter: 'blur(16px)',
+          }} />
+        );
+      })}
+    </div>
+  );
+};
+
+// Layout: 2 Images Split Comparison (Top / Bottom)
+const SplitLayoutComponent: React.FC<{
+  scene: SceneData;
+  imageUrls: (string | null)[];
+  imageTransform: string;
+  imageFilter: string;
+  imageObjFit: 'cover' | 'contain';
+  frame: number;
+}> = ({ scene, imageUrls, imageTransform, imageFilter, imageObjFit, frame }) => {
+  const topUrl = imageUrls[0] || 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5';
+  const bottomUrl = imageUrls[1] || topUrl;
+  
+  // divider line scale/reveal
+  const dividerScale = interpolate(frame, [5, 20], [0, 100], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  
+  const topPlacement = getSceneImagePlacement(scene, 0);
+  const bottomPlacement = getSceneImagePlacement(scene, 1);
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', zIndex: 4 }}>
+      {/* Top Half */}
+      <div style={{ position: 'relative', height: '50%', width: '100%', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <Img src={topUrl} style={{
+          width: '100%', height: '100%', objectFit: 'cover',
+          objectPosition: topPlacement.position,
+          transform: `${imageTransform === 'none' ? '' : imageTransform} rotate(${topPlacement.rotation}deg) scale(${topPlacement.zoom})`,
+          filter: imageFilter === 'none' ? undefined : imageFilter
+        }} />
+        {/* 'BEFORE' or 'Top' label */}
+        <div style={{
+          position: 'absolute', top: 16, left: 16,
+          background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.2)',
+          color: '#FFF', fontSize: 11, fontWeight: 900, letterSpacing: 1.5,
+          padding: '4px 10px', borderRadius: '4px', textTransform: 'uppercase',
+          fontFamily: 'sans-serif'
+        }}>
+          Before
+        </div>
+      </div>
+      
+      {/* Divider Line */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', height: 3, width: `${dividerScale}%`,
+        background: 'linear-gradient(to right, transparent, #FFD700, #FFF, #FFD700, transparent)',
+        boxShadow: '0 0 10px #FFD700, 0 0 2px #FFF',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 5,
+      }} />
+      
+      {/* Bottom Half */}
+      <div style={{ position: 'relative', height: '50%', width: '100%', overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <Img src={bottomUrl} style={{
+          width: '100%', height: '100%', objectFit: 'cover',
+          objectPosition: bottomPlacement.position,
+          transform: `${imageTransform === 'none' ? '' : imageTransform} rotate(${bottomPlacement.rotation}deg) scale(${bottomPlacement.zoom})`,
+          filter: imageFilter === 'none' ? undefined : imageFilter
+        }} />
+        {/* 'AFTER' or 'Bottom' label */}
+        <div style={{
+          position: 'absolute', bottom: 16, left: 16,
+          background: 'rgba(212, 175, 55, 0.85)', border: '1px solid #FFD700',
+          color: '#000', fontSize: 11, fontWeight: 900, letterSpacing: 1.5,
+          padding: '4px 10px', borderRadius: '4px', textTransform: 'uppercase',
+          fontFamily: 'sans-serif'
+        }}>
+          After
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Layout: 4 Images 2x2 Grid Component
+const Grid4LayoutComponent: React.FC<{
+  scene: SceneData;
+  imageUrls: (string | null)[];
+  imageFilter: string;
+  frame: number;
+  fps: number;
+}> = ({ scene, imageUrls, imageFilter, frame, fps }) => {
+  const fallbacks = [
+    'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5',
+    'https://images.unsplash.com/photo-1513519245088-0e12902e5a38',
+    'https://images.unsplash.com/photo-1541701494587-cb58502866ab',
+    'https://images.unsplash.com/photo-1507679799987-c73779587ccf'
+  ];
+  
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 4,
+      display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr',
+      gap: 12, padding: 12,
+      background: 'rgba(0,0,0,0.35)',
+    }}>
+      {Array.from({ length: 4 }).map((_, i) => {
+        const url = imageUrls[i] || fallbacks[i % fallbacks.length];
+        
+        // Staggered zoom animation for each grid cell
+        const cellSpring = spring({
+          frame: Math.max(0, frame - i * 5),
+          fps,
+          config: { damping: 13, stiffness: 120 }
+        });
+        const zoom = interpolate(cellSpring, [0, 1], [0.85, 1.0]);
+        const opacity = interpolate(cellSpring, [0, 1], [0, 1]);
+        
+        const placement = getSceneImagePlacement(scene, i);
+
+        return (
+          <div key={i} style={{
+            position: 'relative', overflow: 'hidden', borderRadius: 12,
+            border: '2px solid rgba(255,255,255,0.15)',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.6)',
+            transform: `scale(${zoom})`,
+            opacity,
+          }}>
+            <Img src={url} style={{
+              width: '100%', height: '100%', objectFit: 'cover',
+              objectPosition: placement.position,
+              transform: `rotate(${placement.rotation}deg) scale(${placement.zoom})`,
+              filter: imageFilter === 'none' ? undefined : imageFilter
+            }} />
+            <div style={{
+              position: 'absolute', bottom: 8, right: 8,
+              background: 'rgba(0,0,0,0.5)', color: 'rgba(255,255,255,0.7)',
+              fontSize: 10, padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace'
+            }}>
+              #{i + 1}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Layout: 6 Images 2x3 Grid Component (Perfect for vertical 9:16 layout)
+const Grid6LayoutComponent: React.FC<{
+  scene: SceneData;
+  imageUrls: (string | null)[];
+  imageFilter: string;
+  frame: number;
+  fps: number;
+}> = ({ scene, imageUrls, imageFilter, frame, fps }) => {
+  const fallbacks = [
+    'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5',
+    'https://images.unsplash.com/photo-1513519245088-0e12902e5a38',
+    'https://images.unsplash.com/photo-1541701494587-cb58502866ab',
+    'https://images.unsplash.com/photo-1507679799987-c73779587ccf',
+    'https://images.unsplash.com/photo-1518895949257-7621c3c786d7',
+    'https://images.unsplash.com/photo-1520408222757-6f9f95d87d5d'
+  ];
+  
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 4,
+      display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr',
+      gap: 8, padding: 8,
+      background: 'rgba(0,0,0,0.4)',
+    }}>
+      {Array.from({ length: 6 }).map((_, i) => {
+        const url = imageUrls[i] || fallbacks[i % fallbacks.length];
+        
+        // Staggered zoom animation for each grid cell
+        const cellSpring = spring({
+          frame: Math.max(0, frame - i * 4),
+          fps,
+          config: { damping: 13, stiffness: 120 }
+        });
+        const zoom = interpolate(cellSpring, [0, 1], [0.82, 1.0]);
+        const opacity = interpolate(cellSpring, [0, 1], [0, 1]);
+        
+        const placement = getSceneImagePlacement(scene, i);
+
+        return (
+          <div key={i} style={{
+            position: 'relative', overflow: 'hidden', borderRadius: 8,
+            border: '1.5px solid rgba(255,255,255,0.12)',
+            boxShadow: '0 6px 15px rgba(0,0,0,0.65)',
+            transform: `scale(${zoom})`,
+            opacity,
+          }}>
+            <Img src={url} style={{
+              width: '100%', height: '100%', objectFit: 'cover',
+              objectPosition: placement.position,
+              transform: `rotate(${placement.rotation}deg) scale(${placement.zoom})`,
+              filter: imageFilter === 'none' ? undefined : imageFilter
+            }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ==========================================
 // 5. MAIN STAGE RENDERING ENGINE
 // ==========================================
@@ -1236,6 +2546,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
 
   // --- Layout Mode Determination ---
   const layout = scene.layout || 'framed';
+  const primaryPlacement = getSceneImagePlacement(scene, 0);
 
   // --- Dynamic Image Scaling & Animation ---
   let imageTransform = 'none';
@@ -1344,9 +2655,11 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}blur(${blurVal}px)`;
     }
   } else if (scene.effect === 'optical-glow') {
-    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.15) contrast(1.05)`;
+    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.1) contrast(1.03)`;
   } else if (scene.effect === 'dream-bloom') {
-    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.1) contrast(1.05) saturate(1.1)`;
+    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}brightness(1.05) contrast(1.03) saturate(1.05)`;
+  } else if (scene.effect === 'sharp-details') {
+    imageFilter = `${imageFilter === 'none' ? '' : imageFilter + ' '}contrast(1.15) saturate(1.15) brightness(1.02)`;
   } else if (scene.effect === 'shake-flash-beat') {
     const beat = spring({
       frame: frame % 15,
@@ -1383,12 +2696,13 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
     };
   } else {
     // Default framed layout
+    const hasText = !!scene.textOverlay;
     frameStyle = {
       position: 'absolute',
-      top: '12%',
+      top: hasText ? '12%' : '12.5%',
       left: '8%',
       right: '8%',
-      height: '62%',
+      height: hasText ? '62%' : '83.4%',
       zIndex: 4,
       overflow: 'hidden',
       borderRadius: '24px',
@@ -1398,6 +2712,9 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         ? '1px solid rgba(255, 255, 255, 0.25)'
         : '2.5px solid rgba(255, 255, 255, 0.1)',
       boxShadow: '0 30px 60px rgba(0,0,0,0.85)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
     };
   }
 
@@ -1416,99 +2733,154 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
         }}
       />
 
-      {/* 2. Blurred duplicate background for premium Stage (skipped in full bleed) */}
-      {scene.imageUrl && layout !== 'full-bleed' && (
-        <div 
-          style={{
-            position: 'absolute',
-            inset: -20,
-            backgroundImage: `url(${scene.imageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: scene.effect === 'glitch' 
-              ? 'blur(35px) brightness(0.12) saturate(1.5) contrast(1.3)' 
-              : 'blur(38px) brightness(0.14) saturate(1.1)',
-            transform: 'scale(1.12)',
-            zIndex: 2,
-          }}
-        />
-      )}
-
-      {/* 3. Ambient radial glows (skipped in full bleed) */}
-      {layout !== 'full-bleed' && (
-        <div style={{
-          position: 'absolute',
-          inset: 27,
-          boxShadow: scene.border === 'gold-filigree' 
-            ? 'inset 0 0 120px rgba(212, 175, 55, 0.22)' 
-            : 'inset 0 0 90px rgba(255, 255, 255, 0.08)',
-          borderRadius: '18px',
-          pointerEvents: 'none',
-          zIndex: 5,
-        }} />
-      )}
-
-      {/* 4. Main media frame */}
-      {scene.imageUrl && (
-        <div style={frameStyle}>
-          {scene.effect === 'chromatic-aberration' || scene.effect === 'rgb-split-beat' ? (
-            <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-              <Img src={scene.imageUrl} style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: imageObjFit, transform: `${imageTransform} translate(4px, 0px)`,
-                filter: 'drop-shadow(rgba(255,0,0,0.6) 0px 0px 0px) brightness(1.2)',
-                mixBlendMode: 'screen',
-              }} />
-              <Img src={scene.imageUrl} style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: imageObjFit, transform: `${imageTransform} translate(-4px, 0px)`,
-                filter: 'drop-shadow(rgba(0,255,255,0.6) 0px 0px 0px) brightness(1.2)',
-                mixBlendMode: 'screen',
-              }} />
-              <Img src={scene.imageUrl} style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: imageObjFit, transform: imageTransform,
-                opacity: 0.6,
-              }} />
-            </div>
-          ) : (
-            <>
-              <Img src={scene.imageUrl} style={{
-                width: '100%',
-                height: '100%',
-                objectFit: imageObjFit,
-                transform: imageTransform,
-                filter: imageFilter === 'none' ? undefined : imageFilter,
-              }} />
-              {scene.effect === 'optical-glow' && (
-                <Img src={scene.imageUrl} style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%',
-                  objectFit: imageObjFit,
-                  transform: imageTransform,
-                  filter: 'blur(15px) brightness(1.5) contrast(1.3)',
-                  mixBlendMode: 'screen',
-                  opacity: 0.65,
-                  pointerEvents: 'none',
-                }} />
-              )}
-              {scene.effect === 'dream-bloom' && (
-                <Img src={scene.imageUrl} style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%',
-                  objectFit: imageObjFit,
-                  transform: imageTransform,
-                  filter: 'blur(20px) brightness(1.4) contrast(1.25)',
-                  mixBlendMode: 'screen',
-                  opacity: 0.55,
-                  pointerEvents: 'none',
-                }} />
-              )}
-            </>
+      {/* 2. Content rendering based on sceneType */}
+      {scene.sceneType === 'intro' ? (
+        <IntroSlide scene={scene} theme={theme} />
+      ) : scene.sceneType === 'outro' ? (
+        <OutroSlide scene={scene} theme={theme} />
+      ) : (
+        <>
+          {/* 3. Blurred duplicate background for premium Stage (skipped in full bleed) */}
+          {(scene.imageUrl || (scene.imageUrls && scene.imageUrls[0])) && layout !== 'full-bleed' && (
+            <Img 
+              src={scene.imageUrl || (scene.imageUrls && scene.imageUrls[0]) || ''}
+              style={{
+                position: 'absolute',
+                inset: -20,
+                width: 'calc(100% + 40px)',
+                height: 'calc(100% + 40px)',
+                objectFit: 'cover',
+                objectPosition: primaryPlacement.position,
+                filter: scene.effect === 'glitch' 
+                  ? 'blur(35px) brightness(0.12) saturate(1.5) contrast(1.3)' 
+                  : 'blur(38px) brightness(0.14) saturate(1.1)',
+                transform: `scale(1.12) rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                zIndex: 2,
+              }}
+            />
           )}
-        </div>
+
+          {/* 4. Ambient radial glows (skipped in full bleed) */}
+          {layout !== 'full-bleed' && (
+            <div style={{
+              position: 'absolute',
+              inset: 27,
+              boxShadow: scene.border === 'gold-filigree' 
+                ? 'inset 0 0 120px rgba(212, 175, 55, 0.22)' 
+                : 'inset 0 0 90px rgba(255, 255, 255, 0.08)',
+              borderRadius: '18px',
+              pointerEvents: 'none',
+              zIndex: 5,
+            }} />
+          )}
+
+          {/* 5. Main media frame */}
+          {(scene.imageUrl || (scene.imageUrls && scene.imageUrls.length > 0)) && (
+            <div style={frameStyle}>
+              {layout === 'split-comparison' ? (
+                <SplitLayoutComponent
+                  scene={scene}
+                  imageUrls={scene.imageUrls || []}
+                  imageTransform={imageTransform}
+                  imageFilter={imageFilter}
+                  imageObjFit={imageObjFit}
+                  frame={frame}
+                />
+              ) : layout === 'grid-4' ? (
+                <Grid4LayoutComponent
+                  scene={scene}
+                  imageUrls={scene.imageUrls || []}
+                  imageFilter={imageFilter}
+                  frame={frame}
+                  fps={fps}
+                />
+              ) : layout === 'grid-6' ? (
+                <Grid6LayoutComponent
+                  scene={scene}
+                  imageUrls={scene.imageUrls || []}
+                  imageFilter={imageFilter}
+                  frame={frame}
+                  fps={fps}
+                />
+              ) : scene.effect === 'chromatic-aberration' || scene.effect === 'rgb-split-beat' ? (
+                <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+                  <Img src={scene.imageUrl || ''} style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%',
+                    objectFit: imageObjFit, 
+                    objectPosition: primaryPlacement.position,
+                    transform: `${imageTransform === 'none' ? '' : imageTransform} translate(4px, 0px) rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                    filter: 'drop-shadow(rgba(255,0,0,0.6) 0px 0px 0px) brightness(1.2)',
+                    mixBlendMode: 'screen',
+                  }} />
+                  <Img src={scene.imageUrl || ''} style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%',
+                    objectFit: imageObjFit, 
+                    objectPosition: primaryPlacement.position,
+                    transform: `${imageTransform === 'none' ? '' : imageTransform} translate(-4px, 0px) rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                    filter: 'drop-shadow(rgba(0,255,255,0.6) 0px 0px 0px) brightness(1.2)',
+                    mixBlendMode: 'screen',
+                  }} />
+                  <Img src={scene.imageUrl || ''} style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%',
+                    objectFit: imageObjFit, 
+                    objectPosition: primaryPlacement.position,
+                    transform: `${imageTransform === 'none' ? '' : imageTransform} rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                    opacity: 0.6,
+                  }} />
+                </div>
+              ) : (
+                <>
+                  <Img src={scene.imageUrl || ''} style={{
+                    width: layout === 'framed' ? undefined : '100%',
+                    height: layout === 'framed' ? undefined : '100%',
+                    maxWidth: layout === 'framed' ? '100%' : undefined,
+                    maxHeight: layout === 'framed' ? '100%' : undefined,
+                    objectFit: imageObjFit,
+                    objectPosition: primaryPlacement.position,
+                    transform: `${imageTransform === 'none' ? '' : imageTransform} rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                    filter: imageFilter === 'none' ? undefined : imageFilter,
+                  }} />
+                  {scene.effect === 'optical-glow' && (
+                    <Img src={scene.imageUrl || ''} style={{
+                      position: 'absolute', inset: 0,
+                      width: layout === 'framed' ? undefined : '100%',
+                      height: layout === 'framed' ? undefined : '100%',
+                      maxWidth: layout === 'framed' ? '100%' : undefined,
+                      maxHeight: layout === 'framed' ? '100%' : undefined,
+                      objectFit: imageObjFit,
+                      objectPosition: primaryPlacement.position,
+                      transform: `${imageTransform === 'none' ? '' : imageTransform} rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                      filter: 'blur(6px) brightness(1.2) contrast(1.1)',
+                      mixBlendMode: 'screen',
+                      opacity: 0.2,
+                      pointerEvents: 'none',
+                    }} />
+                  )}
+                  {scene.effect === 'dream-bloom' && (
+                    <Img src={scene.imageUrl || ''} style={{
+                      position: 'absolute', inset: 0,
+                      width: layout === 'framed' ? undefined : '100%',
+                      height: layout === 'framed' ? undefined : '100%',
+                      maxWidth: layout === 'framed' ? '100%' : undefined,
+                      maxHeight: layout === 'framed' ? '100%' : undefined,
+                      objectFit: imageObjFit,
+                      objectPosition: primaryPlacement.position,
+                      transform: `${imageTransform === 'none' ? '' : imageTransform} rotate(${primaryPlacement.rotation}deg) scale(${primaryPlacement.zoom})`,
+                      filter: 'blur(8px) brightness(1.15) contrast(1.1)',
+                      mixBlendMode: 'screen',
+                      opacity: 0.15,
+                      pointerEvents: 'none',
+                    }} />
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* 5. Custom typography layouts */}
-      {scene.textOverlay && (
+      {scene.textOverlay && scene.border !== 'lower-third' && (
         <>
           {scene.textAnimation === 'typewriter' ? (
             <TypewriterText 
@@ -1668,6 +3040,20 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {/* Shine sweep and glass refraction */}
       {scene.effect === 'shine-sweep' && <ShineSweep startFrame={0} />}
       {scene.effect === 'glass-refraction' && <GlassRefraction />}
+      
+      {/* General Purpose layouts/motion graphics effects */}
+      {scene.effect === 'stage-spotlight' && <Spotlight />}
+      {scene.effect === 'metallic-shine' && <ShineSweepOverlay />}
+      {scene.effect === 'prism-split' && (
+        <PrismRefractionOverlay 
+          imageUrl={scene.imageUrl || (scene.imageUrls && scene.imageUrls[0]) || ''} 
+          layout={layout} 
+          rotation={primaryPlacement.rotation}
+          zoom={primaryPlacement.zoom}
+          position={primaryPlacement.position}
+        />
+      )}
+      {scene.effect === 'shape-bursts' && <ShapeBursts />}
 
       {/* 8. Light Leaks */}
       {scene.lightLeak === 'police-flash' && <PoliceFlash />}
@@ -1689,6 +3075,11 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.border === 'drawing-pulse' && <DrawingBorder startFrame={0} />}
       {scene.border === 'corners-only' && <ModernCorners opacity={1} />}
       {scene.border === 'ornament-lace' && <OrnateLaceBorder />}
+      
+      {scene.border === 'theater-curtains' && <TheaterCurtains />}
+      {scene.border === 'cyber-hud' && <CyberHudOverlay />}
+      {scene.border === 'lower-third' && <LowerThirdBanner title={scene.textOverlay} subtitle={scene.subtitle} font={theme.fontFamily} />}
+      {scene.border === 'kinetic-reveal' && <KineticBarReveal />}
 
       {/* 10. Letterbox */}
       {scene.letterbox && <Letterbox />}
@@ -1701,6 +3092,9 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       {scene.particleOverlay === 'fire-embers' && <FireEmbersField />}
       {scene.particleOverlay === 'gold-dust' && <GoldDustField count={30} />}
       {scene.particleOverlay === 'floating-petals' && <FloatingPetalsField count={15} />}
+      
+      {scene.particleOverlay === 'bokeh-particles' && <BokehField count={12} />}
+      {scene.particleOverlay === 'film-dust-scratches' && <FilmDustScratches />}
 
     </AbsoluteFill>
   );
