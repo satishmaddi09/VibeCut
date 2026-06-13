@@ -47,10 +47,8 @@ jobs:
           echo "Original size: $(du -sh out/video.mp4 | cut -f1)"
           ffmpeg -i out/video.mp4 \
             -vcodec libx264 \
-            -crf 28 \
-            -preset fast \
-            -maxrate 2M \
-            -bufsize 4M \
+            -crf 23 \
+            -preset medium \
             -acodec aac \
             -b:a 128k \
             -movflags +faststart \
