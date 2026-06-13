@@ -2855,7 +2855,7 @@ const SceneComponent: React.FC<{ scene: SceneData; theme: VisualTheme }> = ({ sc
       )}
 
       {/* 5. Custom typography layouts */}
-      {scene.textOverlay && scene.border !== 'lower-third' && (
+      {scene.textOverlay && scene.border !== 'lower-third' && scene.sceneType !== 'outro' && (
         <>
           {scene.textAnimation === 'typewriter' ? (
             <TypewriterText 
